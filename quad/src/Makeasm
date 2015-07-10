@@ -1,0 +1,15 @@
+F90=gfortran
+OPTS=-O2 -ffpe-trap=invalid,zero,overflow -ffpe-summary=none -finit-real=snan
+
+%.o : %.f90
+	$(F90) -c $(OPTS) $<
+
+quad.x:	quad.o fftasm.o ifft.o
+	$(F90) -o quad.x $(OPTS) quad.o fftasm.o ifft.o
+quad.o:	quad.f90
+fftasm.o:	fftasm.f90
+ifft.o:		ifft.s
+	as -o ifft.o ifft.s
+
+clean:
+	rm -f quad.x *.o *.mod
