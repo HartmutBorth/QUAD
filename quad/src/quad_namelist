@@ -2,7 +2,7 @@
  ngx     = 64
  sig     = 0.5E-4
  lam     = 0.00
- nstop   = 100000
+ nstop   = 50000
  nout    = 200
  nforc   = 1
  kfmin   = 5

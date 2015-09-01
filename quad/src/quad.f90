@@ -382,20 +382,10 @@ if (ios == 0) then
   close(nunamelist)
 endif
 
-!--- check if ini-file init.srv is present and get ngx and ngy
-inquire(file='init.srv',exist=lexist)
-if (lexist) then
-  open (nuini,file='init.srv',form='unformatted')
-  read (nuini) ihead
-  ngx = ihead(5)
-  ngy = ihead(6)
-  close(nuini)
-endif
-
 write(nudiag, &
  '(" *************************************************")')
 write(nudiag, &
- '(" * Values of namelist <quad_nl> used             *")')
+ '(" * Parameters of namelist <quad_nl> used         *")')
 write(nudiag, &
  '(" *************************************************")')
 write (nudiag,quad_nl)
@@ -428,7 +418,7 @@ rnxy = 1.0d0 / nxy   ! reverse of gridpoint number
 write(nudiag, &
  '(" *************************************************")')
 write(nudiag, &
- '(" * Values of basic parameters used               *")')
+ '(" * Values of basic parameters                    *")')
 write(nudiag, &
  '(" *************************************************")')
 write (nudiag,*) "nkx  = ", ngx/3
@@ -491,16 +481,24 @@ use quadmod
 
 logical :: lexist
 
-!--- check if ini-file init.srv is present
+!--- check if init.srv is present and has correct size
 inquire(file='init.srv',exist=lexist)
 if (lexist) then
   open (nuini,file='init.srv',form='unformatted')
   read (nuini) ihead
-  read (nuini) gvo(:,:)
-  close(nuini)
+  if (ihead(5) == ngx .and. ihead(6) == ngy) then
+    read (nuini) gvo(:,:)
+    close(nuini)
+    write(nudiag, &
+    '(" *************************************************")')
+    write(nudiag, &
+    '("  Reading vorticity field from init.srv ")')
+    write(nudiag, &
+    '(" *************************************************",/)')
+  endif
 endif
 
-!--- check if ini-file X<ngx>_var138.srv for vorticity is present
+!--- check if ini-file N<ngx>_var138.srv is present
 call checkvar(ngx,138,lexist)
 if (lexist) then
    call readvar(ngx,138,gvo)
@@ -509,7 +507,7 @@ endif
 !--- transform initial vorticity field to spectral space
 call grid_to_fourier(gvo,cvo)
 
-cvo(0,0) = (0.0,0.0)         ! set mean of vorticity to zero
+cvo(0,0) = (0.0,0.0)    ! set mean of vorticity to zero
 
 return
 end subroutine init_vars
@@ -525,11 +523,11 @@ character(256) :: fname
 integer :: kcode,kgx
 
 if (kgx < 100) then
-  write(fname,'("X",I2.2,"_var",I4.4,".srv")') kgx,kcode
+  write(fname,'("N",I2.2,"_var",I4.4,".srv")') kgx,kcode
 elseif (kgx < 1000) then
-  write(fname,'("X",I3.3,"_var",I4.4,".srv")') kgx,kcode
+  write(fname,'("N",I3.3,"_var",I4.4,".srv")') kgx,kcode
 else
-  write(fname,'("X",I4.4,"_var",I4.4,".srv")') kgx,kcode
+  write(fname,'("N",I4.4,"_var",I4.4,".srv")') kgx,kcode
 endif
 
 fname = trim(fname)
@@ -549,8 +547,8 @@ character(256) :: fname
 integer :: kgx,kcode
 
 call mkfname(kgx,kcode,fname)
-write (*,*) kcode
-write (*,*) fname
+!write (*,*) kcode
+!write (*,*) fname
 inquire(file=fname,exist=lexist)
 
 return
@@ -571,7 +569,13 @@ real(8)        :: vargp(ngx,ngy)
 call mkfname(kgx,kcode,fname)
 
 open(nuini,file=fname,form='unformatted')
-write(nudiag,*) "Reading variable of file <",fname,">"
+
+write(nudiag, &
+'(" *************************************************")')
+write(nudiag,'("  Reading var",i4.4 " from file " a256)') &
+      kcode,trim(fname)
+write(nudiag, &
+'(" *************************************************",/)')
 
 read (nuini) ihead
 read (nuini) vargp(:,:)
@@ -612,8 +616,6 @@ do j = 0, nfy
       cli(i,j) = exp(dt*c)
    enddo
 enddo
-!write (88,*) "L"
-!write (88,'(4e12.4)') cli
 
 cli(0,0) = (0.0,0.0)
 
@@ -892,8 +894,6 @@ select case (nforc)
     enddo
 
 end select
-
-write (32,*) (enf-eni)/dt
 
 return
 end
