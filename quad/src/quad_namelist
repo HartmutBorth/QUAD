@@ -1,12 +1,13 @@
  $quad_nl
- sig     = 0.5E-6
- lam     = 0.001
+ ngx     = 64
+ sig     = 0.5E-4
+ lam     = 0.00
  nstop   = 100000
- nout    = 50 
- nforc   = 2
- kfmin   = 2 
- kfmax   = 4 
- ampforc = 0.0015
+ nout    = 200
+ nforc   = 1
+ kfmin   = 5
+ kfmax   = 7
+ aforc   = 0.005
  tforc   = 0.01
  alpha   = 0
  beta    = 0

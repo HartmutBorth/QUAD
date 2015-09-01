@@ -15,3 +15,21 @@ fftmod.o:	fftmod.f90
 
 clean:
 	rm -f quad.x *.o *.mod
+
+cleanall:
+	rm -f quad.x *.o *.mod quad_out quad_out.nc quad_tseri quad_diag
+
+run:
+	time quad.x
+
+nc:	
+	cdo -f nc copy quad_out quad_out.nc
+
+view:
+	ncview quad_out.nc
+all:
+	make cleanall
+	make
+	make run
+	make nc
+	make view

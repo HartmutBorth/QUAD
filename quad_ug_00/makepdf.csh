@@ -1,5 +1,5 @@
 #----------------------------#
-# Create PDF of User's Guide # 
+# Create PDF of User's Guide #
 #----------------------------#
 
 pdflatex ug_quad
