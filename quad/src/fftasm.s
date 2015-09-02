@@ -15,6 +15,9 @@
    .globl _ifft2s_
 _ifft2s_:
 
+   .globl ifft2s_
+ifft2s_:
+
    pushq   %r13
    pushq   %r12
    movl    (%r8 ), %r8d              # r8    = lot
@@ -104,6 +107,9 @@ LOOP_IFFT2:
 
    .globl   _ifft4s_
 _ifft4s_:
+
+   .globl   ifft4s_
+ifft4s_:
 
    pushq   %rbp
    movq    %rsp, %rbp
@@ -329,6 +335,9 @@ LOOP_I_IFFT4S:
 
    .globl _ifft4m_
 _ifft4m_:
+
+   .globl ifft4m_
+ifft4m_:
 
    pushq   %r15
    pushq   %r14
@@ -872,8 +881,8 @@ LOOP_I_FAST_MTP:
 
    .globl _fast_ftp
 _fast_ftp:
-   .globl _fast_ftp_
-_fast_ftp_:
+   .globl fast_ftp_
+fast_ftp_:
 
 
    push    %rbx
@@ -1684,8 +1693,8 @@ LOOP_DFFT4M_B:
 
    .globl _fast_gtp
 _fast_gtp:
-   .globl _fast_gtp_
-_fast_gtp_:
+   .globl fast_gtp_
+fast_gtp_:
 
    push    %rbx
    push    %r12
