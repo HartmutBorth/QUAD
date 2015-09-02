@@ -505,7 +505,7 @@ if (lexist) then
 endif
 
 !--- transform initial vorticity field to spectral space
-call grid_to_fourier(gvo,cvo)
+call grid_to_fourier(gvo,cvo,nfx,nfy,ngx,ngy)
 
 cvo(0,0) = (0.0,0.0)    ! set mean of vorticity to zero
 
@@ -776,9 +776,9 @@ call deriv
 
 ! trasforma in reale
 
-call fourier_to_grid(cvo,gvo)
-call fourier_to_grid(fp1,gp1)
-call fourier_to_grid(fp2,gp2)
+call fourier_to_grid(cvo,gvo,nfx,nfy,ngx,ngy)
+call fourier_to_grid(fp1,gp1,nfx,nfy,ngx,ngy)
+call fourier_to_grid(fp2,gp2,nfx,nfy,ngx,ngy)
 
 if(nstep.gt.0.and.mod(nstep,nout).eq.0) call ecrire(nuout,gvo)
 
@@ -793,8 +793,8 @@ gp2(:,:) = gp2(:,:) * gvo(:,:)
 
 ! trasforma in fourier
 
-call grid_to_fourier(gp1,fp1)
-call grid_to_fourier(gp2,fp2)
+call grid_to_fourier(gp1,fp1,nfx,nfy,ngx,ngy)
+call grid_to_fourier(gp2,fp2,nfx,nfy,ngx,ngy)
 
 ! calcola cnl= - jacobiano
 
