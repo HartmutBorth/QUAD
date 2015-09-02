@@ -1,6 +1,0 @@
-rm quad.x
-make -f Makeasm
-time quad.x
-cdo -f nc copy quad.srv quad.nc
-
-ncview quad.nc
