@@ -783,8 +783,8 @@ LOOP_I_IFFT8:
 
    .globl _fast_mtp
 _fast_mtp:
-   .globl _fast_mtp_
-_fast_mtp_:
+   .globl fast_mtp_
+fast_mtp_:
 
    movl    (%rsi), %esi              # rsi = n
 
