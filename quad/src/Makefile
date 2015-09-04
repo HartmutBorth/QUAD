@@ -20,7 +20,7 @@ clean:
 	rm -f quad.x *.o *.mod
 
 cleanall:
-	rm -f quad.x *.o *.mod quad_out quad_out.nc quad_tseri quad_diag
+	rm -f quad.x *.o *.mod quad_out quad_out.nc quad_tseri quad_cfl quad_diag
 
 run:
 	time quad.x

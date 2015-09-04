@@ -1,10 +1,10 @@
  $quad_nl
- ngx     = 64
- sig     = 0.5E-4
- lam     = 0.00
+ ngx     = 64 
+ sig     = 0.25E-4
+ lam     = 0
  nstop   = 50000
  nout    = 200
- nforc   = 1
+ nforc   = 0
  kfmin   = 5
  kfmax   = 7
  aforc   = 0.005

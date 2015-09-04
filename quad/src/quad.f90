@@ -36,16 +36,14 @@ module quadmod
 ! * QUAD.                                     *
 ! *********************************************
 
-! ***********************
-! * Basic control flags *
-! ***********************
-
+! *****************
+! * Model control *
+! *****************
 character (256) :: quadversion = "July 2015, Version 0.0"
 
-
-! *********************************************
-! * Basic physical and mathematical constants *
-! *********************************************
+! ***************************
+! * Physics and mathematics *
+! ***************************
 
 real(8), parameter :: pi    = 4.0d0 * atan(1.0d0)
 real(8), parameter :: twopi = pi+pi
@@ -53,9 +51,9 @@ real(8), parameter :: twopi = pi+pi
 complex(8), parameter :: ci = (0.0d0,1.0d0)  ! complex unit
 
 
-! *********************************
-! * Basic input/output parameters *
-! *********************************
+! ****************
+! * Input/output *
+! ****************
 
 ! --- i/o units
 integer, parameter :: nunamelist  = 10  ! namelist
@@ -70,6 +68,7 @@ integer, parameter :: nunrestart  = 40  ! restart file
 character (256) :: quad_namelist    = "quad_namelist"
 character (256) :: quad_ini         = "quad_ini"
 character (256) :: quad_tseri       = "quad_tseri"
+character (256) :: quad_cfl         = "quad_cfl"
 character (256) :: quad_out         = "quad_out"
 character (256) :: quad_diag        = "quad_diag"
 character (256) :: quad_restart     = "quad_restart"
@@ -81,7 +80,7 @@ integer :: ihead(8)
 ! * Basic diagnostic parameters * 
 ! *******************************
 
-integer :: ispm          ! time steps per minute (cpu-time)
+integer :: isps          ! time steps per second (cpu-time)
 
 real    :: tmstart       ! time at start of cpu-time keeping
 real    :: tmstop        ! time at stop of cpu-time keeping
@@ -135,12 +134,12 @@ real(8) :: ampcoeff
 
 complex(8) :: phi
 
-integer :: nforc = 0 ! forcing switch 
-                     ! 0 = no forcing 
-                     ! 1 = constant forcing with 
-                     ! spectral forcing ring 
+integer :: nforc = 0 ! forcing switch
+                     ! 0 = no forcing
+                     ! 1 = constant forcing with
+                     ! spectral forcing ring
                      ! 2 = markov chain
-                     ! 3 = forcing with constant wave numbers 
+                     ! 3 = forcing with constant wave numbers
                      !     but random uncorrelated phases (white noise)
 
 real(8) :: kfmin  = 4.0+1.0 ! min radius = sqrt(kfmin) of spectr. forcing
@@ -168,7 +167,7 @@ integer :: nfy  = 42  ! 2*nky   (y-dimension in fourier domain)
 
 
 !--- time integration
-integer :: nstop = 10000  ! last time step of integration
+integer :: nstop = 25000  ! last time step of integration
 integer :: nout  = 100    ! time steps between data output (-1 = no output)
 integer :: ndiag = 10     ! time steps between diagnostic output (-1 no output)
 integer :: ncfl  = 10     ! time steps between cfl-check (-1 no cfl check)
@@ -191,7 +190,7 @@ real(8), allocatable :: guvo(:,:) ! u*vorticity
 real(8), allocatable :: gvvo(:,:) ! v*vorticity
 
 
-!--- variables in spectral (Fourier) space 
+!--- variables in spectral (Fourier) space
 real(8), allocatable :: fpsi(:,:) ! stream function
 real(8), allocatable :: fu(:,:)   ! velocity x-direction
 real(8), allocatable :: fv(:,:)   ! velocity y-direction
@@ -202,7 +201,6 @@ real(8), allocatable :: fp2(:,:) ! v or v*zeta
 
 real(8), allocatable :: fuvo(:,:) ! u*vorticity
 real(8), allocatable :: fvvo(:,:) ! v*vorticity
-
 
 complex(8), allocatable :: cvo(:,:)  ! vorticity
 complex(8), allocatable :: cnl0(:,:) ! Jacobian at time 0
@@ -230,14 +228,13 @@ implicit none
 
 real(8) :: time
 real(8) :: dt1
-real    :: rundnq
-real    :: rundnt
 
 call prolog
 
 !--- initialize the time variables
 time = 0.d0
 nstep = 0
+
 
 ! >>>>>>>>>>  first steps  <<<<<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -254,7 +251,7 @@ call teuler(cnl1,dt1)
 
 ! do one step by leap-frog without forcing
 
-call jacob(cnl0)    
+call jacob(cnl0)
 call teuler(cnl0,dt)
 nstep=nstep+1
 time=time+dt
@@ -285,16 +282,18 @@ do while (nstep <= nstop)
    nstep = nstep + 1
    time = time + dt
 enddo
-close (nuout)
 
-call cpu_time(tmstop)
-tmrun = tmstop - tmstart
-rundnq  = tmrun / nstop * rnxy *1.0e9
-rundnt  = rundnq  * rnx
-ispm    = nint(60.0 * nstop / tmrun)
 
-write(nudiag,'(i4," x ",i4,i10," [steps / minute]",2f10.4)') &
-      ngx,ngx,ispm,rundnq,rundnt
+
+!call cpu_time(tmstop)
+!tmrun = tmstop - tmstart
+!isps    = nint(nstop / tmrun)
+
+!write(nudiag, &
+! '(" *************************************************")')
+!write(nudiag,'("Time steps per second: ",i20)') isps
+!write(nudiag, &
+! '(" *************************************************")')
 
 call epilog
 
@@ -324,11 +323,9 @@ call init_vars
 call init_tstep
 call init_rand
 call init_forc
-!call defkbeta
-
 return
-end subroutine prolog
 
+end subroutine prolog
 
 ! ************************
 ! * SUBROUTINE OPENFILES *
@@ -336,8 +333,11 @@ end subroutine prolog
 subroutine openfiles
 use quadmod
 
-open(nudiag,file=quad_diag)
 open(nutseri,file=quad_tseri)
+open(nudiag,file=quad_diag)
+if (ncfl .gt. 0) then 
+  open(nucfl,file=quad_cfl)
+endif
 open(nuout,file=quad_out,form='unformatted')
 
 return
@@ -376,10 +376,14 @@ namelist /quad_nl/ ngx    ,nstop ,nout   ,ndiag   ,           &
                    nforc  ,kfmin ,kfmax  ,aforc   ,tforc  ,   &
                    myseed
 
-open(nunamelist,file=quad_namelist,iostat=ios)
-if (ios == 0) then
-  read (nunamelist,quad_nl)
-  close(nunamelist)
+
+inquire(file=quad_namelist,exist=lexist)
+if (lexist) then
+  open(nunamelist,file=quad_namelist,iostat=ios)
+  if (ios == 0) then
+    read (nunamelist,quad_nl)
+    close(nunamelist)
+  endif
 endif
 
 write(nudiag, &
@@ -390,7 +394,7 @@ write(nudiag, &
  '(" *************************************************")')
 write (nudiag,quad_nl)
 write(nudiag, &
- '(" ***********************************************",/)')
+ '(" *************************************************",/)')
 
 return
 end subroutine read_nl
@@ -468,7 +472,6 @@ allocate(cnl0(0:nkx,0:nfy)); cnl0(:,:) = (0.0,0.0) ! nonlinear time derivative
 allocate(cnl1(0:nkx,0:nfy)); cnl1(:,:) = (0.0,0.0) ! nonlinear previous time deriv.
 allocate(cnl2(0:nkx,0:nfy)); cnl2(:,:) = (0.0,0.0) ! nonlinear preprevious time deriv.
 
-
 return
 end subroutine alloc_vars
 
@@ -479,11 +482,14 @@ end subroutine alloc_vars
 subroutine init_vars
 use quadmod
 
-logical :: lexist
+logical :: lexist_init, lexist_var138
 
-!--- check if init.srv is present and has correct size
-inquire(file='init.srv',exist=lexist)
-if (lexist) then
+!--- check if init.srv and/or N<ngx>_var138 are present
+inquire(file='init.srv',exist=lexist_init)
+call checkvar(ngx,138,lexist_var138)
+if (lexist_var138) then
+  call readvar(ngx,138,gvo)
+elseif (lexist_init) then
   open (nuini,file='init.srv',form='unformatted')
   read (nuini) ihead
   if (ihead(5) == ngx .and. ihead(6) == ngy) then
@@ -496,18 +502,20 @@ if (lexist) then
     write(nudiag, &
     '(" *************************************************",/)')
   endif
-endif
-
-!--- check if ini-file N<ngx>_var138.srv is present
-call checkvar(ngx,138,lexist)
-if (lexist) then
-   call readvar(ngx,138,gvo)
+else
+  write(nudiag, &
+  '(" *************************************************")')
+  write(nudiag, &
+  '("  No matching initial vorticity field found, take zero field as zero")')
+  write(nudiag, &
+  '(" *************************************************",/)')
 endif
 
 !--- transform initial vorticity field to spectral space
 call grid_to_fourier(gvo,cvo,nfx,nfy,ngx,ngy)
 
-cvo(0,0) = (0.0,0.0)    ! set mean of vorticity to zero
+!--- set mean of vorticity to zero
+cvo(0,0) = (0.0,0.0)
 
 return
 end subroutine init_vars
@@ -572,7 +580,7 @@ open(nuini,file=fname,form='unformatted')
 
 write(nudiag, &
 '(" *************************************************")')
-write(nudiag,'("  Reading var",i4.4 " from file " a256)') &
+write(nudiag,'(" * Reading var",i4.4 " from file " a)') &
       kcode,trim(fname)
 write(nudiag, &
 '(" *************************************************",/)')
@@ -598,11 +606,11 @@ integer :: i,j
 
 ! End of time integration 
 !
-! sig:  viscosity coefficient (short-wave limit)        
-! lam:  drag coefficient      (long-wave)   
-! beta: strength of coriolis force   
+! sig:  viscosity coefficient (short-wave limit)
+! lam:  drag coefficient      (long-wave)
+! beta: strength of coriolis force
 !
-! Time propagator of linear part of differential equation 
+! Time propagator of linear part of differential equation
 !
 ! exp[-dt*(sig*(k**2)**psig + lam*(k**2)**plam) * (k**2)/(k**2+alpha)] *
 ! (dt*beta*kx/(k**2+alpha))
@@ -701,6 +709,16 @@ subroutine epilog
 use quadmod
 implicit none
 
+call cpu_time(tmstop)
+tmrun = tmstop - tmstart
+isps    = nint(nstop / tmrun)
+
+write(nudiag, &
+ '(" *************************************************")')
+write(nudiag,'("Time steps per second: ",i20)') isps
+write(nudiag, &
+ '(" *************************************************")')
+
 call closefiles
 
 return
@@ -715,11 +733,13 @@ use quadmod
 
 close(nudiag)
 close(nutseri)
+if (ncfl .gt. 0) then 
+  close(nucfl)
+endif
+close (nuout)
 
 return
 end subroutine closefiles
-
-
 
 ! integrazione secondo euler sulla parte non lineare ed
 ! esatta su quella lineare.
@@ -1062,10 +1082,7 @@ implicit none
 
 real(8) :: cfl
 real(8) :: maxu,maxv
-real(8) :: ee,zz
 
-zz = 0.5 * rnxy *  sum(gvo(:,:) * gvo(:,:))
-ee = 0.5 * rnxy * (sum(gp1(:,:) * gp1(:,:)) + sum(gp2(:,:) * gp2(:,:)))
 
 ! checking whether the numerical stability is obtained, using the
 ! courant number (cfl criteria). this number should be less than 0.5.
@@ -1079,7 +1096,7 @@ else
    cfl = maxv
 endif
 
-write(nutseri,*) nstep,ee,zz,real(cfl)
+write(nucfl,*) nstep,real(cfl)
 
 return
 end
