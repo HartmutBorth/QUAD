@@ -4,7 +4,7 @@
  lam     = 0
  nstop   = 50000
  nout    = 200
- nforc   = 0
+ nforc   = 1
  kfmin   = 5
  kfmax   = 7
  aforc   = 0.005

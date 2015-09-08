@@ -55,23 +55,27 @@ complex(8), parameter :: ci = (0.0d0,1.0d0)  ! complex unit
 ! * Input/output *
 ! ****************
 
-! --- i/o units
+!--- flags and switches
+logical :: lres = .false.   ! true if file <quad_resini> exists
+
+!--- i/o units
 integer, parameter :: nunamelist  = 10  ! namelist
 integer, parameter :: nuini       = 15  ! initial conditions
 integer, parameter :: nutseri     = 20  ! time series
 integer, parameter :: nucfl       = 25  ! time series
 integer, parameter :: nuout       = 30  ! output fields
-integer, parameter :: nudiag      = 35  ! statistics of model run
-integer, parameter :: nunrestart  = 40  ! restart file
+integer, parameter :: nuresini    = 35  ! restart for reading initial state
+integer, parameter :: nuresfin    = 40  ! restart for writing final state
+integer, parameter :: nudiag      = 45  ! statistics of model run
 
 !--- i/o file names
-character (256) :: quad_namelist    = "quad_namelist"
-character (256) :: quad_ini         = "quad_ini"
-character (256) :: quad_tseri       = "quad_tseri"
-character (256) :: quad_cfl         = "quad_cfl"
-character (256) :: quad_out         = "quad_out"
-character (256) :: quad_diag        = "quad_diag"
-character (256) :: quad_restart     = "quad_restart"
+character (256) :: quad_namelist  = "quad_namelist"
+character (256) :: quad_tseri     = "quad_tseri"
+character (256) :: quad_cfl       = "quad_cfl"
+character (256) :: quad_out       = "quad_out"
+character (256) :: quad_resini    = "quad_resini"
+character (256) :: quad_resfin    = "quad_resfin"
+character (256) :: quad_diag      = "quad_diag"
 
 !--- header for output of service format
 integer :: ihead(8)
@@ -315,6 +319,7 @@ implicit none
 call cpu_time(tmstart)
 call openfiles
 call mk_diaghead
+if (lres) call check_res
 call read_nl
 call init_pars
 call alloc_vars
@@ -333,10 +338,16 @@ end subroutine prolog
 subroutine openfiles
 use quadmod
 
+inquire(file=quad_resini,exist=lres)
+if (lres) then
+  open(nuresini,file=quad_resini,form='unformatted')
+endif
+open(nuresfin,file=quad_resfin,form='unformatted')
+
 open(nutseri,file=quad_tseri)
 open(nudiag,file=quad_diag)
 if (ncfl .gt. 0) then 
-  open(nucfl,file=quad_cfl)
+   open(nucfl,file=quad_cfl)
 endif
 open(nuout,file=quad_out,form='unformatted')
 
@@ -375,7 +386,6 @@ namelist /quad_nl/ ngx    ,nstop ,nout   ,ndiag   ,           &
                    ly     ,sig   ,psig   ,lam     ,plam   ,   &
                    nforc  ,kfmin ,kfmax  ,aforc   ,tforc  ,   &
                    myseed
-
 
 inquire(file=quad_namelist,exist=lexist)
 if (lexist) then
@@ -506,7 +516,7 @@ else
   write(nudiag, &
   '(" *************************************************")')
   write(nudiag, &
-  '("  No matching initial vorticity field found, take zero field as zero")')
+  '("  No matching vorticity field found, take zero field as default")')
   write(nudiag, &
   '(" *************************************************",/)')
 endif
@@ -709,13 +719,16 @@ subroutine epilog
 use quadmod
 implicit none
 
+call write_res
+
 call cpu_time(tmstop)
 tmrun = tmstop - tmstart
 isps    = nint(nstop / tmrun)
 
 write(nudiag, &
  '(" *************************************************")')
-write(nudiag,'("Time steps per second: ",i20)') isps
+write(nudiag,'("  Total time in seconds: ",f15.2)') tmrun
+write(nudiag,'("  Time steps per second: ",i12)') isps
 write(nudiag, &
  '(" *************************************************")')
 
@@ -725,11 +738,29 @@ return
 end subroutine epilog
 
 
+! ************************
+! * SUBROUTINE WRITE_RES *
+! ************************
+subroutine write_res
+use quadmod
+implicit none
+
+call put_restart_integer('ngx',ngx)
+
+return
+end subroutine write_res
+
+
 ! *************************
 ! * SUBROUTINE CLOSEFILES *
 ! *************************
 subroutine closefiles
 use quadmod
+
+if (lres) then
+  close(nuresini)
+endif
+close(nuresfin)
 
 close(nudiag)
 close(nutseri)

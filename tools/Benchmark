@@ -1,7 +1,7 @@
 #!/bin/bash
 
 rm -f quad.rt
-for N in 32 64 128 256 512 1024 2048
+for N in 32 64 128 256
 do
    echo $N
    MakeInit.x $N

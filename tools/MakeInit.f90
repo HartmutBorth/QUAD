@@ -31,11 +31,11 @@ do jy = 1 , ny
 !               + 1.1 * cos((jx-1) * dx) &
 !               + 0.1 * sin((jy-1) * dx)
 
-      z(jx,jy) = 0.0d0 
+!     z(jx,jy) = 0.0d0 
 
-!     z(jx,jy) =  cos((jx-1) * dx +(jy-1) * dx)
-!     z(jx,jy) =  1.0 * cos((jx-1)*dx)   +  3.0 * cos((jx-1)*dx*2.0) &
-!              + 10.0 * sin((jy-1) * dy) + 20.0 * sin((jy-1) * dy * 2.0)
+     z(jx,jy) =  cos((jx-1) * dx +(jy-1) * dx)
+     z(jx,jy) =  1.0 * cos((jx-1)*dx)   +  3.0 * cos((jx-1)*dx*2.0) &
+               + 10.0 * sin((jy-1) * dy) + 20.0 * sin((jy-1) * dy * 2.0)
    enddo
 enddo
 !    z(nx/2,ny/2) = 2.0
