@@ -58,20 +58,16 @@ complex(8), parameter :: ci = (0.0d0,1.0d0)  ! complex unit
 ! ****************
 
 !--- flags and switches
-logical :: lrst   = .false.   ! true if <quad_rstini> exists
-logical :: lnl    = .false.   ! true if <quad_namelist> exists
-
-integer :: ios_nl = 1         ! 0 if <quad_namelist> is readable
-
+logical :: lres = .false.   ! true if file <quad_resini> exists
 
 !--- i/o units
-integer, parameter :: nunl        = 10  ! namelist
+integer, parameter :: nunamelist  = 10  ! namelist
 integer, parameter :: nuini       = 15  ! initial conditions
 integer, parameter :: nutseri     = 20  ! time series
 integer, parameter :: nucfl       = 25  ! time series
 integer, parameter :: nuout       = 30  ! output fields
-integer, parameter :: nurstini    = 35  ! restart for reading initial state
-integer, parameter :: nurstfin    = 40  ! restart for writing final state
+integer, parameter :: nuresini    = 35  ! restart for reading initial state
+integer, parameter :: nuresfin    = 40  ! restart for writing final state
 integer, parameter :: nudiag      = 45  ! statistics of model run
 
 !--- i/o file names
@@ -79,25 +75,12 @@ character (256) :: quad_namelist  = "quad_namelist"
 character (256) :: quad_tseri     = "quad_tseri"
 character (256) :: quad_cfl       = "quad_cfl"
 character (256) :: quad_out       = "quad_out"
-character (256) :: quad_rstini    = "quad_rstini"
-character (256) :: quad_rstfin    = "quad_rstfin"
+character (256) :: quad_resini    = "quad_resini"
+character (256) :: quad_resfin    = "quad_resfin"
 character (256) :: quad_diag      = "quad_diag"
 
 !--- header for output of service format
 integer :: ihead(8)
-
-!--- codes of variables to be read at initialization
-integer, parameter :: nmax_inigp = 5
-integer, parameter :: nmax_inisp = 5
-integer :: inigp(nmax_inigp) = &
-   (/ 138, &
-       0 , &     
-       0 , &     
-       0 , &     
-       0   &    
-    /) 
-integer :: inisp(nmax_inigp) = 0
-
 
 ! *******************************
 ! * Basic diagnostic parameters * 
@@ -126,20 +109,17 @@ real(8) :: alpha = 0.0  ! alpha = 1/R_hat**2 [1/m**2]
 real(8) :: beta  = 0.0  ! ambient vorticity gradient [1/m*s]
 
 !--- Laplacian viscosity (dissipation on small scales)
-real(8) :: sig   =  5.d-6    ! coefficient hyperfriction [lx^psig/s]
-
-real(8) :: tsig  =  1        ! 1/time-scale of (hyper)friction [1/s]
-real(8) :: klow  =  32       ! minimum cut-off wave number
-real(8) :: psig  =  2.d0     ! power of Laplacian modelling viscosity 
-                             ! on small-scale psig > 0
+real(8) :: sig   =  5.d-6    ! time-scale of hyperfriction [1/s]
+real(8) :: klow  =  64       ! non-dimensional low cutoff 
+                             ! wave number
+real(8) :: psig  =  2.d0     ! power of Laplacian modelling
+                             ! dissipation psig > 0
 
 !--- Laplacian friction (dissipation on large scales)
-real(8) :: lam   =  0.65d-3  ! coefficient of hypofriction [lx^plam/s]
-
-real(8) :: tlam  =  1        ! 1/time-scale of hypofriction [1/s]
-real(8) :: kmax  =  2        ! maximum cut-off wave number
-real(8) :: plam  = -2.d0     ! power of Laplacian modelling friction 
-                             ! on large-scale plam <= 0
+real(8) :: lam   =  0.65d-3  ! time-scale of hypofriction [1/s]
+real(8) :: kmax  =  2        ! maximum resolved wave number [1/m]
+real(8) :: plam  = -4.d0     ! power of Laplacian modelling 
+                             ! dissipation plam <= 0
 
 !--- Random number generation
 integer, parameter  :: mxseedlen         = 8 ! maximum seed length
@@ -193,22 +173,21 @@ integer :: nfy  = 42  ! 2*nky   (y-dimension in fourier domain)
 
 
 !--- time integration
-integer :: nsteps = 25000  ! last time step of integration
-integer :: tstep  = 0      ! current time step (since start of runs) 
-integer :: tstop  = 0      ! last time step of run
-
-
+integer :: nstop  = 25000  ! last time step of integration
 integer :: nout   = 100    ! time steps between data output 
                            ! (-1 = no output)
 integer :: ndiag  = 10     ! time steps between diagnostic output 
                            ! (-1 no output)
-integer :: ncfl   = 10     ! time steps between cfl-check 
-                           ! (-1 no cfl check)
+integer :: ncfl   = 10     ! time steps between cfl-check (-1 no cfl check)
  
 real(8) :: dt     = 1.d-3  ! length of time step [s]
 
+integer :: tstep  = 0      ! time step since start of simulation
+integer :: tstep1 = 0      ! 1st time step of run for cpu-statistics
 
-!--- variables in physical/gridpoint (GP) space
+
+
+!--- variables in physical (grid) space
 real(8), allocatable :: gvo(:,:)  ! vorticity            [1/s]
 real(8), allocatable :: gpsi(:,:) ! stream function      [m^2/s]
 real(8), allocatable :: gu(:,:)   ! velocity x-direction [m/s]
@@ -221,7 +200,7 @@ real(8), allocatable :: guvo(:,:) ! u*vorticity
 real(8), allocatable :: gvvo(:,:) ! v*vorticity
 
 
-!--- variables in Fourier/spectral (SP) space
+!--- variables in spectral (Fourier) space
 real(8), allocatable :: fpsi(:,:) ! stream function
 real(8), allocatable :: fu(:,:)   ! velocity x-direction
 real(8), allocatable :: fv(:,:)   ! velocity y-direction
@@ -264,6 +243,9 @@ call prolog
 
 call master
 
+!--- initialize the time variables
+tstep = 0
+
 
 ! >>>>>>>>>>  first steps  <<<<<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -283,6 +265,7 @@ call teuler(cnl1,dt1)
 call jacob(cnl0)
 call teuler(cnl0,dt)
 tstep=tstep+1
+!time=time+dt
 
 ! spectral: z(2dt),cnl0(dt),cnl1(dt),cnl2(0)
 ! 2: 2nd. order adam-bashforth
@@ -291,12 +274,12 @@ call jacob(cnl0)
 call tadba2(cnl0,cnl1)
 cnl1(:,:) = cnl0(:,:)
 tstep=tstep+1
-
+!time=time+dt
 
 ! 3: 3rd. order adam-bashforth
 ! >>>>>>>>>>  time evolution <<<<<<<<<<<<<<<<<<<<<<<<
 
-do while (tstep <= tstop)
+do while (tstep <= nstop)
    call jacob(cnl0)
 
    ! time integration part
@@ -308,6 +291,7 @@ do while (tstep <= tstop)
    if (mod(tstep,1000) == 0) write(*,*)' time step ',tstep
 
    tstep = tstep + 1
+   !time = time + dt
 enddo
 
 call epilog
@@ -328,40 +312,33 @@ use quadmod
 implicit none
 
 call cpu_time(tmstart)
-call inq_open_files
+call openfiles
 call mk_diaghead
-call read_res
+if (lres) call check_res
+if (lres) call read_res
+call read_nl
 call init_pars
 call alloc_vars
 call init_fft
-if (lrst) call check_rst
-if (lrst) call read_rst
-if (lnl)  call read_nl
-call read_ini
-call init_lin_tprop
+call init_vars
+call init_tstep
 call init_rand
 call init_forc
-
 return
+
 end subroutine prolog
 
-! *****************************
-! * SUBROUTINE INQ_OPEN_FILES *
-! *****************************
-subroutine inq_open_files
+! ************************
+! * SUBROUTINE OPENFILES *
+! ************************
+subroutine openfiles
 use quadmod
 
-inquire(file=quad_rstini,exist=lrst)
-if (lrst) then
-  open(nurstini,file=quad_rstini,form='unformatted')
+inquire(file=quad_resini,exist=lres)
+if (lres) then
+  open(nuresini,file=quad_resini,form='unformatted')
 endif
-
-inquire(file=quad_namelist,exist=lnl)
-if (lnl) then
-  open(nunl,file=quad_namelist,iostat=ios_nl)
-endif
-
-open(nurstfin,file=quad_rstfin,form='unformatted')
+open(nuresfin,file=quad_resfin,form='unformatted')
 
 open(nutseri,file=quad_tseri)
 open(nudiag,file=quad_diag)
@@ -371,22 +348,7 @@ endif
 open(nuout,file=quad_out,form='unformatted')
 
 return
-end subroutine inq_open_files
-
-
-! ***********************
-! * SUBROUTINE READ_RES *
-! ***********************
-subroutine read_res
-use quadmod
-
-character (80) :: argtmp
-
-call get_command_argument(1,argtmp)
-read(argtmp,*) ngx
-
-return
-end subroutine read_res
+end subroutine openfiles
 
 
 ! **************************
@@ -407,23 +369,15 @@ end subroutine mk_diaghead
 
 
 ! ***********************
-! * SUBROUTINE READ_RST *
+! * SUBROUTINE READ_RES *
 ! ***********************
-subroutine read_rst
+subroutine read_res
 use quadmod
 
-write(nudiag, &
- '(/," *************************************************")')
-write(nudiag, &
- '("  Reading parameters from restart file <quad_rstini>")')
-write(nudiag, &
- '(" *************************************************",/)')
-
-call get_restart_integer('tstep',tstep)
-call get_restart_array('seed',seed,nseedlen,nseedlen,1)
+call get_restart_integer('ngx',ngx)
 
 return
-end subroutine read_rst
+end subroutine read_res
 
 
 ! **********************
@@ -432,13 +386,23 @@ end subroutine read_rst
 subroutine read_nl
 use quadmod
 
-namelist /quad_nl/ nsteps ,nout  ,ndiag  ,inigp   ,inisp  ,   &
+logical :: lexist
+integer :: ios
+
+namelist /quad_nl/ ngx    ,nstop ,nout   ,ndiag   ,           &
                    ncfl   ,dt    ,alpha  ,beta    ,lx     ,   &
                    ly     ,sig   ,psig   ,lam     ,plam   ,   &
                    nforc  ,kfmin ,kfmax  ,aforc   ,tforc  ,   &
                    myseed
 
-if (lnl) read(nunl,quad_nl) 
+inquire(file=quad_namelist,exist=lexist)
+if (lexist) then
+  open(nunamelist,file=quad_namelist,iostat=ios)
+  if (ios == 0) then
+    read (nunamelist,quad_nl)
+    close(nunamelist)
+  endif
+endif
 
 write(nudiag, &
  '(/," *************************************************")')
@@ -502,146 +466,117 @@ implicit none
 
 integer :: j
 
-! *******************************
-! * 1D real and complex vectors *
-! *******************************
-allocate(ki(0:nkx))    ; ki(:)   = [(j,j=0,nkx)]
-allocate(kj(0:nfy))    ; kj(:)   = [(j,j=0,nky),(j,j=-nky,-1)]
-allocate(kx(0:nkx))    ; kx(:)   = 0.0
-allocate(ky(0:nfy))    ; ky(:)   = 0.0
-allocate(kx2(0:nkx))   ; kx2(:)  = 0.0
-allocate(ky2(0:nfy))   ; ky2(:)  = 0.0
-allocate(pkx2(0:nkx))  ; pkx2(:) = 0.0
-allocate(pky2(0:nfy))  ; pky2(:) = 0.0
-
-allocate(cikx(0:nkx))  ; cikx(:) = (0.0,0.0)
-allocate(ciky(0:nfy))  ; ciky(:) = (0.0,0.0)
+allocate(ki(0:nkx)) ; ki(:) = [(j,j=0,nkx)]
+allocate(kj(0:nfy)) ; kj(:) = [(j,j=0,nky),(j,j=-nky,-1)]
 
 
-! ******************************
-! * 2D real and complex arrays *
-! ******************************
+allocate(gvo(1:ngx,1:ngy)) ; gvo(:,:) = 0.0 ! zeta in grid space
+allocate(gp1(1:ngx,1:ngy)) ; gp1(:,:) = 0.0 ! u or u*zeta in grid space
+allocate(gp2(1:ngx,1:ngy)) ; gp2(:,:) = 0.0 ! v or v*zeta in grid space
+allocate(fp1(0:nfx,0:nfy)) ; fp1(:,:) = 0.0 ! u or u*zeta in Fourier space 
+allocate(fp2(0:nfx,0:nfy)) ; fp2(:,:) = 0.0 ! v or v*zeta in Fourier space
+allocate(kx(0:nkx))        ; kx(:)    = 0.0
+allocate(ky(0:nfy))        ; ky(:)    = 0.0
+allocate(kx2(0:nkx))       ; kx2(:)   = 0.0
+allocate(ky2(0:nfy))       ; ky2(:)   = 0.0
+allocate(pkx2(0:nkx))      ; pkx2(:)  = 0.0
+allocate(pky2(0:nfy))      ; pky2(:)  = 0.0
 
-!--- grid point space
-allocate(gvo(1:ngx,1:ngy)) ; gvo(:,:)  = 0.0 ! vorticity
-allocate(gp1(1:ngx,1:ngy)) ; gp1(:,:)  = 0.0 ! u or u*zeta in grid space
-allocate(gp2(1:ngx,1:ngy)) ; gp2(:,:)  = 0.0 ! v or v*zeta in grid space
-
-
-!--- spetral space 
-allocate(fp1(0:nfx,0:nfy)) ; fp1(:,:)  = 0.0 ! u or u*zeta
-allocate(fp2(0:nfx,0:nfy)) ; fp2(:,:)  = 0.0 ! v or v*zeta
-
-allocate(cli(0:nkx,0:nfy)) ; cli(:,:)  = (0.0,0.0) ! linear time propagator 
-allocate(cvo(0:nkx,0:nfy)) ; cvo(:,:)  = (0.0,0.0) ! vorticity
-allocate(cnl0(0:nkx,0:nfy)); cnl0(:,:) = (0.0,0.0) ! Jacobian at time level  0
-allocate(cnl1(0:nkx,0:nfy)); cnl1(:,:) = (0.0,0.0) ! Jacobian at time level -1
-allocate(cnl2(0:nkx,0:nfy)); cnl2(:,:) = (0.0,0.0) ! Jacobian at time level -2
+allocate(cikx(0:nkx))      ; cikx(:)   = (0.0,0.0)
+allocate(ciky(0:nfy))      ; ciky(:)   = (0.0,0.0)
+allocate(cli(0:nkx,0:nfy)) ; cli(:,:)  = (0.0,0.0)
+allocate(cvo(0:nkx,0:nfy)) ; cvo(:,:)  = (0.0,0.0) ! vorticity in fourier domain
+allocate(cnl0(0:nkx,0:nfy)); cnl0(:,:) = (0.0,0.0) ! nonlinear time derivative
+allocate(cnl1(0:nkx,0:nfy)); cnl1(:,:) = (0.0,0.0) ! nonlinear previous time deriv.
+allocate(cnl2(0:nkx,0:nfy)); cnl2(:,:) = (0.0,0.0) ! nonlinear preprevious time deriv.
 
 return
 end subroutine alloc_vars
 
 
-! ***********************
-! * SUBROUTINE READ_INI *
-! ***********************
-subroutine read_ini
+! ************************
+! * SUBROUTINE INIT_VARS *
+! ************************
+subroutine init_vars
 use quadmod
 
-logical         :: lexist
-integer         :: kcode
+logical :: lexist_init, lexist_var138
 
-character(2)    :: gtp
-character(256)  :: fname
+!--- check if init.srv and/or N<ngx>_var138 are present
+inquire(file='init.srv',exist=lexist_init)
+call checkvar(ngx,138,lexist_var138)
+if (lexist_var138) then
+  call readvar(ngx,138,gvo)
+elseif (lexist_init) then
+  open (nuini,file='init.srv',form='unformatted')
+  read (nuini) ihead
+  if (ihead(5) == ngx .and. ihead(6) == ngy) then
+    read (nuini) gvo(:,:)
+    close(nuini)
+    write(nudiag, &
+    '(" *************************************************")')
+    write(nudiag, &
+    '("  Reading vorticity field from init.srv ")')
+    write(nudiag, &
+    '(" *************************************************",/)')
+  endif
+else
+  write(nudiag, &
+  '(" *************************************************")')
+  write(nudiag, &
+  '("  No matching vorticity field for initialization found.")')
+  write(nudiag, &
+  '("  Use zero vorticity field as default.")')
+  write(nudiag, &
+  '(" *************************************************",/)')
+endif
 
-!--- check if GP<ngx>_var<kcode>.srv is present
-gtp = "GP"
-do kk = 1,nmax_inigp
-   kcode = inigp(kk)
-   if (kcode .gt. 0) then
-      call checkvar(ngx,kcode,gtp,lexist)
-      if (lexist) then
-         select case (kcode)
-         case (138)
-            call readvar(ngx,kcode,gtp,gvo)
-            call grid_to_fourier(gvo,cvo,nfx,nfy,ngx,ngy)
-            cvo(0,0) = (0.0,0.0)
-         end select
-      else
-         call mk_fname(ngx,kcode,gtp,fname)
-         write(nudiag, &
-         '(" *************************************************")')
-         write(nudiag, &
-         '("*   File ", A ," not found, use default.")') trim(fname)
-         write(nudiag, &
-         '(" *************************************************",/)')
-      endif
-   endif
-enddo
+!--- transform initial vorticity field to spectral space
+call grid_to_fourier(gvo,cvo,nfx,nfy,ngx,ngy)
 
-!--- check if file SP<ngx>_var<kcode>.srv is present
-gtp = "SP"
-do kk = 1,nmax_inigp
-   kcode = inigp(kk)
-   if (kcode .gt. 0) then
-      call checkvar(ngx,kcode,gtp,lexist)
-      if (lexist) then
-         select case (kcode)
-         case (138)
-            call readvar(ngx,kcode,gtp,gvo)
-         end select
-      else
-         call mk_fname(ngx,kcode,gtp,fname)
-         write(nudiag, &
-         '(" *************************************************")')
-         write(nudiag, &
-         '("*   File ", A ," not found, use default.")') trim(fname)
-         write(nudiag, &
-         '(" *************************************************",/)')
-      endif
-   endif
-enddo
+!--- set mean of vorticity to zero
+cvo(0,0) = (0.0,0.0)
 
 return
-end subroutine read_ini
+end subroutine init_vars
 
 
-! ***********************
-! * SUBROUTINE MK_FNAME *
-! ***********************
-subroutine mk_fname(kgx,kcode,gtp,fname)
+! **********************
+! * SUBROUTINE MKFNAME *
+! **********************
+subroutine mkfname(kgx,kcode,fname)
 use quadmod
 
-character(2)   :: gtp
 character(256) :: fname
 integer :: kcode,kgx
 
 if (kgx < 100) then
-  write(fname,'(A2,I2.2,"_var",I4.4,".srv")') gtp,kgx,kcode
+  write(fname,'("N",I2.2,"_var",I4.4,".srv")') kgx,kcode
 elseif (kgx < 1000) then
-  write(fname,'(A2,I3.3,"_var",I4.4,".srv")') gtp,kgx,kcode
+  write(fname,'("N",I3.3,"_var",I4.4,".srv")') kgx,kcode
 else
-  write(fname,'(A2,I4.4,"_var",I4.4,".srv")') gtp,kgx,kcode
+  write(fname,'("N",I4.4,"_var",I4.4,".srv")') kgx,kcode
 endif
 
 fname = trim(fname)
 
 return
-end subroutine mk_fname
+end subroutine mkfname
 
 
 ! ***********************
 ! * SUBROUTINE CHECKVAR *
 ! ***********************
-subroutine checkvar(kgx,kcode,gtp,lexist)
+subroutine checkvar(kgx,kcode,lexist)
 use quadmod
 
 logical :: lexist
-character(2)   :: gtp
 character(256) :: fname
 integer :: kgx,kcode
 
-call mk_fname(kgx,kcode,gtp,fname)
+call mkfname(kgx,kcode,fname)
+!write (*,*) kcode
+!write (*,*) fname
 inquire(file=fname,exist=lexist)
 
 return
@@ -651,17 +586,15 @@ end subroutine checkvar
 ! **********************
 ! * SUBROUTINE READVAR *
 ! **********************
-subroutine readvar(kgx,kcode,gtp,vargp)
+subroutine readvar(kgx,kcode,vargp)
 use quadmod
 
-character(2)   :: gtp
 character(256) :: fname
 integer        :: kcode,kgx
-real(8)        :: vargp(1:ngx,1:ngy)
-real(8)        :: varfp(0:nfx,0:nfy)
-complex(8)     :: varc(0:nkx,0:nfy)
+real(8)        :: vargp(ngx,ngy)
 
-call mk_fname(kgx,kcode,gtp,fname)
+
+call mkfname(kgx,kcode,fname)
 
 open(nuini,file=fname,form='unformatted')
 
@@ -680,10 +613,10 @@ return
 end subroutine readvar
 
 
-! ****************************
-! * SUBROUTINE INIT_LIN_TPROP *
-! ****************************
-subroutine init_lin_tprop
+! *************************
+! * SUBROUTINE INIT_TSTEP *
+! *************************
+subroutine init_tstep
 use quadmod
 implicit none
 
@@ -691,6 +624,12 @@ real(8) :: k2
 complex(8) :: a,b,c
 integer :: i,j
 
+! End of time integration 
+!
+! sig:  viscosity coefficient (short-wave limit)
+! lam:  drag coefficient      (long-wave)
+! beta: strength of coriolis force
+!
 ! Time propagator of linear part of differential equation
 !
 ! exp[-dt*(sig*(k**2)**psig + lam*(k**2)**plam) * (k**2)/(k**2+alpha)] *
@@ -709,7 +648,7 @@ enddo
 cli(0,0) = (0.0,0.0)
 
 return
-end subroutine init_lin_tprop
+end subroutine init_tstep
 
 
 ! *************
@@ -791,27 +730,9 @@ use quadmod
 
 if (nshutdown > 0) return   ! if an error occured so far
 
-!--- determine final time step of run
-tstop = tstep + nsteps
-
-!--- start timestepping at the beginning of simulation
-if (tstep .eq. 0) call start_tstepping
 
 return
 end subroutine master
-
-
-! ******************************
-! * SUBROUTINE START_TSTEPPING *
-! ******************************
-subroutine start_tstepping
-use quadmod
-
-
-
-
-return
-end subroutine start_tstepping
 
 ! *********************
 ! * SUBROUTINE EPILOG *
@@ -820,11 +741,11 @@ subroutine epilog
 use quadmod
 implicit none
 
-call write_rst
+call write_res
 
 call cpu_time(tmstop)
 tmrun = tmstop - tmstart
-isps    = nint(nsteps / tmrun)
+isps    = nint(nstop / tmrun)
 
 write(nudiag, &
  '(" *************************************************")')
@@ -833,47 +754,47 @@ write(nudiag,'("  Time steps per second: ",i12)') isps
 write(nudiag, &
  '(" *************************************************")')
 
-call close_files
+call closefiles
 
 return
 end subroutine epilog
 
 
 ! ************************
-! * SUBROUTINE WRITE_RST *
+! * SUBROUTINE WRITE_RES *
 ! ************************
-subroutine write_rst
+subroutine write_res
 use quadmod
 implicit none
 
-
 call put_restart_integer('ngx',ngx)
-call put_restart_integer('tstep',tstep)
 
-call random_seed(get=seed)
-call put_restart_array('seed',seed,nseedlen,nseedlen,1)
 
 
 return
-end subroutine write_rst
+end subroutine write_res
 
 
-! **************************
-! * SUBROUTINE CLOSE_FILES *
-! **************************
-subroutine close_files
+! *************************
+! * SUBROUTINE CLOSEFILES *
+! *************************
+subroutine closefiles
 use quadmod
 
-if (lrst) close(nurstini)
-if (lnl) close(nunl) 
-close(nurstfin)
+if (lres) then
+  close(nuresini)
+endif
+close(nuresfin)
+
 close(nudiag)
 close(nutseri)
-if (ncfl .gt. 0) close(nucfl)
+if (ncfl .gt. 0) then 
+  close(nucfl)
+endif
 close (nuout)
 
 return
-end subroutine close_files
+end subroutine closefiles
 
 ! integrazione secondo euler sulla parte non lineare ed
 ! esatta su quella lineare.

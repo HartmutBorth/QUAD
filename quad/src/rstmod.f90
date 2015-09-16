@@ -1,66 +1,75 @@
 ! **********
-! * RESMOD *
+! * RSTMOD *
 ! **********
-module resmod
-use quadmod, only: nuresini,quad_resini, nuresfin, nudiag
+module rstmod
+use quadmod, only: nurstini,quad_rstini, nurstfin, nudiag
 
-integer, parameter :: nresdim  = 200   ! Max number of records
+integer, parameter :: nrstdim  = 200   ! Max number of records
 integer            :: nexcheck =   1   ! Extended checks
-integer            :: nresnum  =   0   ! Actual number of records
+integer            :: nrstnum  =   0   ! Actual number of records
 integer            :: nlastrec =   0   ! Last read record
                                           
-character (len=16) :: yresnam(nresdim) ! Array of record names
+character (len=16) :: yrstnam(nrstdim) ! Array of record names
 
-end module resmod
+end module rstmod
 
 
 ! ************************
 ! * SUBROUTINE CHECK_RES *
 ! ************************
-subroutine check_res
-use resmod
+subroutine check_rst
+use rstmod
 
 character (len=16) :: yn ! variable name
 
+
+write(nudiag, &
+ '(/," *************************************************")')
+write(nudiag,'("  Checking for restart file <quad_rstini>")')
+write(nudiag, &
+ '(" *************************************************",/)')
+
+
+
 do
-   read (nuresini,IOSTAT=iostat) yn
+   read (nurstini,IOSTAT=iostat) yn
    if (iostat /= 0) exit
-   nresnum = nresnum + 1
-   yresnam(nresnum) = yn
-   read (nuresini,IOSTAT=iostat)
+   nrstnum = nrstnum + 1
+   yrstnam(nrstnum) = yn
+   read (nurstini,IOSTAT=iostat)
    if (iostat /= 0) exit
-   if (nresnum >= nresdim) then
+   if (nrstnum >= nrstdim) then
       write(nudiag,*) 'Too many variables in restart file'
-      write(nudiag,*) 'Increase NRESDIM in module resmod'
+      write(nudiag,*) 'Increase NRESDIM in module rstmod'
       write(nudiag,*) '*** Error Stop ***'
       stop
    endif
 enddo
 
-write(nudiag,'(a,i4,3a/)') 'Found ',nresnum, &
-      ' variables in file <',trim(quad_resini),'>'
-do j = 1 , nresnum
-   write(nudiag,'(i4," : ",8x,1x,a)') j,yresnam(j)
+write(nudiag,'(a,i4,3a/)') 'Found ',nrstnum, &
+      ' variables in file <',trim(quad_rstini),'>'
+do j = 1 , nrstnum
+   write(nudiag,'(i4," : ",8x,1x,a)') j,yrstnam(j)
 enddo
-nlastrec = nresnum
+nlastrec = nrstnum
 
 return
-end subroutine check_res
+end subroutine check_rst
 
 
 ! **********************************
 ! * SUBROUTINE GET_RESTART_INTEGER *
 ! **********************************
 subroutine get_restart_integer(yn,kv)
-use resmod
+use rstmod
 
 character (len=*) :: yn
 integer :: kv
 
-do j = 1 , nresnum
-   if (trim(yn) == trim(yresnam(j))) then
+do j = 1 , nrstnum
+   if (trim(yn) == trim(yrstnam(j))) then
       call fileseek(yn,j)
-      read (nuresini) kv
+      read (nurstini) kv
       nlastrec = nlastrec + 1
       return
    endif
@@ -78,15 +87,15 @@ end subroutine get_restart_integer
 ! * SUBROUTINE GET_RESTART_ARRAY *
 ! ********************************
 subroutine get_restart_array(yn,pa,k1,k2,k3)
-use resmod
+use rstmod
 
 character (len=*) :: yn
 real :: pa(k2,k3)
 
-do j = 1 , nresnum
-   if (trim(yn) == trim(yresnam(j))) then
+do j = 1 , nrstnum
+   if (trim(yn) == trim(yrstnam(j))) then
       call fileseek(yn,j)
-      read (nuresini) pa(1:k1,:)
+      read (nurstini) pa(1:k1,:)
       nlastrec = nlastrec + 1
       return
    endif
@@ -105,15 +114,15 @@ end subroutine get_restart_array
 ! * SUBROUTINE PUT_RESTART_INTEGER *
 ! ********************************** 
 subroutine put_restart_integer(yn,kv)
-use resmod
+use rstmod
 
       character (len=*)  :: yn
       character (len=16) :: yy
       integer :: kv
 
       yy = yn
-      write(nuresfin) yy
-      write(nuresfin) kv
+      write(nurstfin) yy
+      write(nurstfin) kv
       return
       end subroutine put_restart_integer
 
@@ -122,7 +131,7 @@ use resmod
 ! * SUBROUTINE PUT_RESTART_ARRAY *
 ! ********************************
 subroutine put_restart_array(yn,pa,k1,k2,k3)
-use resmod
+use rstmod
 
 character (len=*)  :: yn
 character (len=16) :: yy
@@ -130,8 +139,8 @@ integer :: k1,k2,k3
 real :: pa(k2,k3)
 
 yy = yn
-write(nuresfin) yy
-write(nuresfin) pa(1:k1,1:k3)
+write(nurstfin) yy
+write(nurstfin) pa(1:k1,1:k3)
 
 return
 end subroutine put_restart_array
@@ -142,21 +151,21 @@ end subroutine put_restart_array
 ! ***********************
 
 subroutine fileseek(yn,k)
-use resmod
+use rstmod
 
 character (len=*)  :: yn
 character (len=16) :: yy
 
 if (k <= nlastrec) then
-   rewind nuresini
+   rewind nurstini
    nlastrec = 0
 endif
 
 do
-   read (nuresini,iostat=iostat) yy
+   read (nurstini,iostat=iostat) yy
    if (iostat /= 0) exit
    if (trim(yn) == trim(yy)) return ! success
-   read (nuresini,iostat=iostat)    ! skip data
+   read (nurstini,iostat=iostat)    ! skip data
    if (iostat /= 0) exit
    nlastrec = nlastrec + 1
 enddo
@@ -193,15 +202,15 @@ end
 ! * SUBROUTINE VARSEEK *
 ! **********************
 subroutine varseek(yn,knum)
-use resmod
+use rstmod
 
 character (len=*)  :: yn
 character (len=16) :: ytmp
 integer :: k, knum
 
 knum = 0
-do k = 1,nresdim
-   ytmp = yresnam(k)
+do k = 1,nrstdim
+   ytmp = yrstnam(k)
    if (trim(yn) == trim(ytmp)) then 
       knum = k
    endif
