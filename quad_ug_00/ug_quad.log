@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2015.7.15)  29 JUL 2015 16:45
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2015.7.15)  29 SEP 2015 17:41
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -264,9 +264,9 @@ LaTeX Font Info:    External font `cmex10' loaded for size
 Chapter 1.
 [7
 
-] [8]) [9] [10
+] [8]) [9] [10] [11
 
-] [11] [12] (./chap_modhist.tex
+] [12] (./chap_modhist.tex
 Chapter 2.
 ) (./chap_pseudospec.tex [13
 
@@ -290,15 +290,11 @@ Overfull \hbox (0.47232pt too wide) in paragraph at lines 524--530
 12 )$
  []
 
-[18]
-
-LaTeX Warning: Reference `eq_' on page 19 undefined on input line 602.
-
-) (./chap_testperform.tex [19] [20
-
-]
+[18]) (./chap_testperform.tex [19] [20]
 Chapter 4.
-) [21] [22
+) [21
+
+] [22
 
 ] [23] [24] (./chap_impmod.tex
 Chapter 5.
@@ -339,17 +335,14 @@ Appendix C.
 
 ]) [41] (./ug_quad.aux)
 
-LaTeX Warning: There were undefined references.
-
-
 LaTeX Warning: There were multiply-defined labels.
 
  ) 
 Here is how much of TeX's memory you used:
- 2638 strings out of 493304
- 37079 string characters out of 6139871
- 114575 words of memory out of 5000000
- 6026 multiletter control sequences out of 15000+600000
+ 2640 strings out of 493304
+ 37148 string characters out of 6139871
+ 114610 words of memory out of 5000000
+ 6028 multiletter control sequences out of 15000+600000
  11177 words of font info for 43 fonts, out of 8000000 for 9000
  957 hyphenation exceptions out of 8191
  38i,8n,32p,234b,256s stack positions out of 5000i,500n,10000p,200000b,80000s
@@ -366,7 +359,7 @@ m/cmr8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsl12
 .pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb><
 /usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/sh
 are/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb>
-Output written on ug_quad.pdf (41 pages, 211173 bytes).
+Output written on ug_quad.pdf (41 pages, 212276 bytes).
 PDF statistics:
  194 PDF objects out of 1000 (max. 8388607)
  135 compressed objects within 2 object streams

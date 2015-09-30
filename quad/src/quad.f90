@@ -46,7 +46,6 @@ integer :: nshutdown = 0      ! flag to stop program (not active)
 ! ***************************
 ! * Physics and mathematics *
 ! ***************************
-
 real(8), parameter :: pi    = 4.0d0 * atan(1.0d0)
 real(8), parameter :: twopi = pi+pi
 
@@ -69,7 +68,7 @@ integer, parameter :: nunl        = 10  ! namelist
 integer, parameter :: nuini       = 15  ! initial conditions
 integer, parameter :: nutseri     = 20  ! time series
 integer, parameter :: nucfl       = 25  ! time series
-integer, parameter :: nuout       = 30  ! output fields
+integer, parameter :: nugp        = 30  ! output fields
 integer, parameter :: nurstini    = 35  ! restart for reading initial state
 integer, parameter :: nurstfin    = 40  ! restart for writing final state
 integer, parameter :: nudiag      = 45  ! statistics of model run
@@ -78,7 +77,7 @@ integer, parameter :: nudiag      = 45  ! statistics of model run
 character (256) :: quad_namelist  = "quad_namelist"
 character (256) :: quad_tseri     = "quad_tseri"
 character (256) :: quad_cfl       = "quad_cfl"
-character (256) :: quad_out       = "quad_out"
+character (256) :: quad_gp        = "quad_gp"
 character (256) :: quad_rstini    = "quad_rstini"
 character (256) :: quad_rstfin    = "quad_rstfin"
 character (256) :: quad_diag      = "quad_diag"
@@ -95,15 +94,21 @@ integer :: inigp(nmax_inigp) = &
        0 , &     
        0 , &     
        0   &    
-    /) 
-integer :: inisp(nmax_inigp) = 0
+   /) 
+integer :: inisp(nmax_inisp) = &
+   (/  0 , &
+       0 , &     
+       0 , &     
+       0 , &     
+       0   &    
+   /) 
 
 
 ! *******************************
 ! * Basic diagnostic parameters * 
 ! *******************************
 
-integer :: isps          ! time steps per second (cpu-time)
+integer :: tsps          ! time steps per second (cpu-time)
 
 real    :: tmstart       ! time at start of cpu-time keeping
 real    :: tmstop        ! time at stop of cpu-time keeping
@@ -115,8 +120,8 @@ real    :: tmrun         ! total cputime
 ! *************************************
 
 !--- non-dimensional size of fluid domain
-real(8) :: lx = twopi   ! in x-direction (scale L_x =  X/2pi)
-real(8) :: ly = twopi   ! in y-direction
+real(8) :: lx = twopi   ! in x-direction (scale L_x = X/2pi)
+real(8) :: ly = twopi   ! in y-direction (scale L_x = X/2pi)
 
 !--- parameters of evolution equations
 real(8) :: alpha = 0.0  ! alpha = 1/R_hat**2 [1/m**2]
@@ -125,21 +130,66 @@ real(8) :: alpha = 0.0  ! alpha = 1/R_hat**2 [1/m**2]
                             
 real(8) :: beta  = 0.0  ! ambient vorticity gradient [1/m*s]
 
-!--- Laplacian viscosity (dissipation on small scales)
-real(8) :: sig   =  5.d-6    ! coefficient hyperfriction [lx^psig/s]
+!---------------------! 
+! dissipation methods !
+!---------------------! 
+integer :: diss_mthd  = 1  ! dissipation method
+                           ! 1: Laplacian viscosity and friction
+                           !    characterized by the coefficients
+                           !    sig and lam and the powers psig and
+                           !    plam
+                           ! 2: Laplacian viscosity and friction
+                           !    characterized by the reciprocal 
+                           !    damping time-scales rtsig and rtlam,
+                           !    the cut-off wave-numbers ksig and klam
+                           !    and the powers psig and plam 
+ 
 
-real(8) :: tsig  =  1        ! 1/time-scale of (hyper)friction [1/s]
-real(8) :: klow  =  32       ! minimum cut-off wave number
-real(8) :: psig  =  2.d0     ! power of Laplacian modelling viscosity 
-                             ! on small-scale psig > 0
+!----------------------------------!
+! Laplacian viscosity and friction !
+!----------------------------------!
 
-!--- Laplacian friction (dissipation on large scales)
-real(8) :: lam   =  0.65d-3  ! coefficient of hypofriction [lx^plam/s]
+integer, parameter :: sig_nmax = 2 ! maximum number of terms of Laplacian 
+                                   ! dissipation on small scales
+ 
+integer, parameter :: lam_nmax = 2 ! maximum number of terms of Laplacian 
+                                   ! dissipation on large scales
 
-real(8) :: tlam  =  1        ! 1/time-scale of hypofriction [1/s]
-real(8) :: kmax  =  2        ! maximum cut-off wave number
-real(8) :: plam  = -2.d0     ! power of Laplacian modelling friction 
-                             ! on large-scale plam <= 0
+!--- definition of dissipation on small scales
+real(8) :: psig (sig_nmax) =  & ! powers of Laplacian parameterizing
+       (/ 1.d0,               & ! small-scale dissipation psig > 0
+          4.d0                &
+       /)
+real(8) :: sig(sig_nmax)   =  & ! coefficients of different powers
+       (/ 9.765625d-05,      & ! of the Laplacian [m^2*psig/s]
+          9.094947d-11       & 
+       /)
+real(8) :: rtsig(sig_nmax) =  & ! 1/time-scale of different powers
+       (/ 1.d-1,              & ! of the Laplacian [1/s]
+          1.d+2               & 
+       /)
+real(8) :: ksig (sig_nmax) =  & ! lower "cut-off" wave number of different
+       (/ 32,                 & ! powers of Laplacian
+          32                  &
+       /)
+
+!--- definition of dissipation on large scales
+real(8) :: plam (lam_nmax) =  & ! powers of Laplacian modelling viscosity
+       (/ -1.d0,              & ! on large scales plam <= 0
+          -4.d0               &
+       /)      
+real(8) :: lam(lam_nmax)   =  & ! coefficients of different powers
+       (/ 0.d0,               & ! of the Laplacian [m^(-2*psig)/s]
+          0.d0                & 
+       /)
+real(8) :: rtlam(lam_nmax) =  & ! 1/time-scale of different powers
+       (/ 0.d0,               & ! of the Laplacian [1/s]
+          0.d0                & 
+       /)
+real(8) :: klam (lam_nmax) =  & ! lower "cut-off" wave number of different
+       (/ 1,                  & ! powers of Laplacian
+          1                   &
+       /)
 
 !--- Random number generation
 integer, parameter  :: mxseedlen         = 8 ! maximum seed length
@@ -156,7 +206,7 @@ integer :: in(1000,2)
 integer :: nk
 integer :: itau
 
-real(8) :: ampcoeff
+real(8)    :: ampcoeff
 
 complex(8) :: phi
 
@@ -170,6 +220,10 @@ integer :: nforc = 0 ! forcing switch
 
 real(8) :: kfmin  = 4.0+1.0 ! min radius = sqrt(kfmin) of spectr. forcing
 real(8) :: kfmax  = 4.0-1.0 ! max radius = sqrt(kfmax) of spectr. forcing
+
+!--- Scaling
+real(8) :: jac_scl = 1.0 ! scaling factor for jacobian
+
 
 ! ***************************************!
 ! * Basic parameters of numerical scheme !
@@ -192,33 +246,44 @@ integer :: nfx  = 43  ! 2*nkx+1 (x-dimension in fourier domain)
 integer :: nfy  = 42  ! 2*nky   (y-dimension in fourier domain)
 
 
+!--- Jacobian
+integer :: jac_mthd  = 1      ! method to determine Jacobian
+                              ! 1 : divergence form
+
 !--- time integration
-integer :: nsteps = 25000  ! last time step of integration
-integer :: tstep  = 0      ! current time step (since start of runs) 
-integer :: tstop  = 0      ! last time step of run
+integer :: nsteps    = 25000  ! number of time steps to be integrated
+integer :: tstep     = 0      ! current time step (since start of runs) 
+integer :: tstop     = 0      ! last time step of run
+
+integer :: tstp_mthd = 1      ! time stepping method
+                              ! 1 = third order Adams-Bashford
+
+integer :: nstdout   = 2500   ! time steps between messages to
+                              ! standard output (-1 no output)
 
 
-integer :: nout   = 100    ! time steps between data output 
-                           ! (-1 = no output)
-integer :: ndiag  = 10     ! time steps between diagnostic output 
-                           ! (-1 no output)
-integer :: ncfl   = 10     ! time steps between cfl-check 
-                           ! (-1 no cfl check)
+integer :: ndiag     = 500    ! time steps between test outputs into
+                              ! out_diag (-1 no test outputs) 
+
+integer :: ngp       = 100     ! time steps between data output 
+                               ! (-1 = no output)
+integer :: ncfl      = 10      ! time steps between cfl-check 
+                               ! (-1 no cfl check)
+
+integer :: ntseri    = 10      ! time steps between time-series output
+                               ! (-1 no time-series)
  
-real(8) :: dt     = 1.d-3  ! length of time step [s]
+real(8) :: dt        = 1.d-3   ! length of time step [s]
 
 
 !--- variables in physical/gridpoint (GP) space
-real(8), allocatable :: gvo(:,:)  ! vorticity            [1/s]
+real(8), allocatable :: gq(:,:)   ! vorticity            [1/s]
 real(8), allocatable :: gpsi(:,:) ! stream function      [m^2/s]
 real(8), allocatable :: gu(:,:)   ! velocity x-direction [m/s]
 real(8), allocatable :: gv(:,:)   ! velocity y-direction [m/s]
 
-real(8), allocatable :: gp1(:,:) ! u or u*zeta
-real(8), allocatable :: gp2(:,:) ! v or v*zeta
-
-real(8), allocatable :: guvo(:,:) ! u*vorticity
-real(8), allocatable :: gvvo(:,:) ! v*vorticity
+real(8), allocatable :: guq(:,:) ! u*vorticity
+real(8), allocatable :: gvq(:,:) ! v*vorticity
 
 
 !--- variables in Fourier/spectral (SP) space
@@ -226,26 +291,20 @@ real(8), allocatable :: fpsi(:,:) ! stream function
 real(8), allocatable :: fu(:,:)   ! velocity x-direction
 real(8), allocatable :: fv(:,:)   ! velocity y-direction
 
+real(8), allocatable :: fuq(:,:) ! u*vorticity
+real(8), allocatable :: fvq(:,:) ! v*vorticity
 
-real(8), allocatable :: fp1(:,:) ! u or u*zeta
-real(8), allocatable :: fp2(:,:) ! v or v*zeta
+complex(8), allocatable :: cq(:,:)     ! vorticity
+complex(8), allocatable :: cjac0(:,:)  ! Jacobian at time 0
+complex(8), allocatable :: cjac1(:,:)  ! Jacobian at time -1
+complex(8), allocatable :: cjac2(:,:)  ! Jaconbian at time -2
 
-real(8), allocatable :: fuvo(:,:) ! u*vorticity
-real(8), allocatable :: fvvo(:,:) ! v*vorticity
-
-complex(8), allocatable :: cvo(:,:)  ! vorticity
-complex(8), allocatable :: cnl0(:,:) ! Jacobian at time 0
-complex(8), allocatable :: cnl1(:,:) ! Jacobian at time -1
-complex(8), allocatable :: cnl2(:,:) ! Jaconbian at time -2
-
-!--- fft parameters
-integer   , allocatable :: ki(:)
-integer   , allocatable :: kj(:)
-real(8)   , allocatable :: kx  (:), ky  (:)
-real(8)   , allocatable :: kx2 (:), ky2 (:)
-real(8)   , allocatable :: pkx2(:), pky2(:)
-complex(8), allocatable :: cikx(:), ciky(:)
-complex(8), allocatable :: cli(:,:)
+!--- operators in Fourier Space
+integer   , allocatable :: ki(:),kj(:)  
+real(8)   , allocatable :: ki2(:), kj2(:) 
+real(8)   , allocatable :: k2n(:,:), rk2an(:,:)
+real(8)   , allocatable :: kirk2an(:,:),kjrk2an(:,:)
+complex(8), allocatable :: cli(:,:)                  ! linear time propagation
 
 end module quadmod
 
@@ -257,58 +316,9 @@ program quad
 use quadmod
 implicit none
 
-!real(8) :: time = 0.d0
-real(8) :: dt1
-
 call prolog
 
 call master
-
-
-! >>>>>>>>>>  first steps  <<<<<<<<<<<<<<<<<<<<<<<<<<<
-
-! spectral: z(t)
-
-dt1=dt/2.
-
-! 1: leap-frog step
-! do half a step by forward euler
-
-call jacob(cnl1)
-cnl2(:,:) = cnl1(:,:)
-call teuler(cnl1,dt1)
-
-! do one step by leap-frog without forcing
-
-call jacob(cnl0)
-call teuler(cnl0,dt)
-tstep=tstep+1
-
-! spectral: z(2dt),cnl0(dt),cnl1(dt),cnl2(0)
-! 2: 2nd. order adam-bashforth
-
-call jacob(cnl0)
-call tadba2(cnl0,cnl1)
-cnl1(:,:) = cnl0(:,:)
-tstep=tstep+1
-
-
-! 3: 3rd. order adam-bashforth
-! >>>>>>>>>>  time evolution <<<<<<<<<<<<<<<<<<<<<<<<
-
-do while (tstep <= tstop)
-   call jacob(cnl0)
-
-   ! time integration part
-
-   call tadba3 (cnl0,cnl1,cnl2)
-   cnl2(:,:) = cnl1(:,:)
-   cnl1(:,:) = cnl0(:,:)
-  
-   if (mod(tstep,1000) == 0) write(*,*)' time step ',tstep
-
-   tstep = tstep + 1
-enddo
 
 call epilog
 
@@ -330,17 +340,18 @@ implicit none
 call cpu_time(tmstart)
 call inq_open_files
 call mk_diaghead
-call read_res
+call read_resol
 call init_pars
 call alloc_vars
-call init_fft
+call init_ops
 if (lrst) call check_rst
 if (lrst) call read_rst
 if (lnl)  call read_nl
 call read_ini
-call init_lin_tprop
+call init_ltprop
 call init_rand
 call init_forc
+if (tstep .eq. 0) call init_tstepping
 
 return
 end subroutine prolog
@@ -363,21 +374,20 @@ endif
 
 open(nurstfin,file=quad_rstfin,form='unformatted')
 
-open(nutseri,file=quad_tseri)
 open(nudiag,file=quad_diag)
-if (ncfl .gt. 0) then 
-   open(nucfl,file=quad_cfl)
-endif
-open(nuout,file=quad_out,form='unformatted')
+
+if (ntseri .ge. 0)  open(nutseri,file=quad_tseri)
+if (ncfl .ge. 0)    open(nucfl,file=quad_cfl)
+if (ngp .ge. 0)     open(nugp,file=quad_gp,form='unformatted')
 
 return
 end subroutine inq_open_files
 
 
-! ***********************
-! * SUBROUTINE READ_RES *
-! ***********************
-subroutine read_res
+! *************************
+! * SUBROUTINE READ_RESOL *
+! *************************
+subroutine read_resol
 use quadmod
 
 character (80) :: argtmp
@@ -386,7 +396,7 @@ call get_command_argument(1,argtmp)
 read(argtmp,*) ngx
 
 return
-end subroutine read_res
+end subroutine read_resol
 
 
 ! **************************
@@ -432,11 +442,13 @@ end subroutine read_rst
 subroutine read_nl
 use quadmod
 
-namelist /quad_nl/ nsteps ,nout  ,ndiag  ,inigp   ,inisp  ,   &
-                   ncfl   ,dt    ,alpha  ,beta    ,lx     ,   &
-                   ly     ,sig   ,psig   ,lam     ,plam   ,   &
-                   nforc  ,kfmin ,kfmax  ,aforc   ,tforc  ,   &
-                   myseed
+namelist /quad_nl/ nsteps  ,ngp       ,inigp   ,inisp    ,tstp_mthd , &
+                   ncfl    ,dt        ,alpha   ,beta     ,lx        , &
+                   ly      ,sig       ,psig    ,rtsig    ,ksig      , &   
+                   lam     ,plam      ,rtlam   ,klam     ,diss_mthd , &
+                   nforc   ,kfmin     ,kfmax   ,aforc    ,tforc     , &
+                   myseed  ,ntseri    ,nstdout ,jac_mthd ,ndiag     , &
+                   jac_scl 
 
 if (lnl) read(nunl,quad_nl) 
 
@@ -449,6 +461,21 @@ write(nudiag, &
 write (nudiag,quad_nl)
 write(nudiag, &
  '(" *************************************************",/)')
+
+if (diss_mthd .eq. 2) then
+   sig(:) = rtsig(:)*(1/ksig(:))**(2*psig(:))
+   lam(:) = rtlam(:)*(1/klam(:))**(2*plam(:))
+   write(nudiag, &
+    '(" *************************************************")')
+   write(nudiag, &
+    '(" * diss_mthd = 2 ,new sig and lam determined     *")')
+   write(nudiag, &
+    '(" *************************************************")')
+   write (nudiag,*) "sig(:) = ", sig(:)
+   write (nudiag,*) "lam(:) = ", lam(:)
+   write(nudiag, &
+    '(" *************************************************",/)')
+endif
 
 return
 end subroutine read_nl
@@ -505,17 +532,11 @@ integer :: j
 ! *******************************
 ! * 1D real and complex vectors *
 ! *******************************
-allocate(ki(0:nkx))    ; ki(:)   = [(j,j=0,nkx)]
-allocate(kj(0:nfy))    ; kj(:)   = [(j,j=0,nky),(j,j=-nky,-1)]
-allocate(kx(0:nkx))    ; kx(:)   = 0.0
-allocate(ky(0:nfy))    ; ky(:)   = 0.0
-allocate(kx2(0:nkx))   ; kx2(:)  = 0.0
-allocate(ky2(0:nfy))   ; ky2(:)  = 0.0
-allocate(pkx2(0:nkx))  ; pkx2(:) = 0.0
-allocate(pky2(0:nfy))  ; pky2(:) = 0.0
+allocate(ki(0:nkx))   ; ki(:)   = [(j,j=0,nkx)]
+allocate(kj(0:nfy))   ; kj(:)   = [(j,j=0,nky),(j,j=-nky,-1)]
+allocate(ki2(0:nkx))  ; ki2(:)  = 0.0
+allocate(kj2(0:nfy))  ; kj2(:)  = 0.0
 
-allocate(cikx(0:nkx))  ; cikx(:) = (0.0,0.0)
-allocate(ciky(0:nfy))  ; ciky(:) = (0.0,0.0)
 
 
 ! ******************************
@@ -523,20 +544,33 @@ allocate(ciky(0:nfy))  ; ciky(:) = (0.0,0.0)
 ! ******************************
 
 !--- grid point space
-allocate(gvo(1:ngx,1:ngy)) ; gvo(:,:)  = 0.0 ! vorticity
-allocate(gp1(1:ngx,1:ngy)) ; gp1(:,:)  = 0.0 ! u or u*zeta in grid space
-allocate(gp2(1:ngx,1:ngy)) ; gp2(:,:)  = 0.0 ! v or v*zeta in grid space
+allocate(gq(1:ngx,1:ngy))   ; gq(:,:)   = 0.0  ! vorticity
+allocate(gu(1:ngx,1:ngy))   ; gu(:,:)   = 0.0  ! velocity in x-dir.
+allocate(gv(1:ngx,1:ngy))   ; gv(:,:)   = 0.0  ! velocity in y-dir.
+
+allocate(gpsi(1:ngx,1:ngy)) ; gpsi(:,:) = 0.0  ! stream function
+allocate(guq(1:ngx,1:ngy))  ; guq(:,:)  = 0.0  ! u*vorticity
+allocate(gvq(1:ngx,1:ngy))  ; gvq(:,:)  = 0.0  ! v*vorticity
 
 
 !--- spetral space 
-allocate(fp1(0:nfx,0:nfy)) ; fp1(:,:)  = 0.0 ! u or u*zeta
-allocate(fp2(0:nfx,0:nfy)) ; fp2(:,:)  = 0.0 ! v or v*zeta
+allocate(fu(0:nfx,0:nfy))   ; fu(:,:)    = 0.0 ! u or u*zeta
+allocate(fv(0:nfx,0:nfy))   ; fv(:,:)    = 0.0 ! v or v*zeta
+allocate(fuq(0:nfx,0:nfy))  ; fuq(:,:)  = 0.0 ! u or u*zeta
+allocate(fvq(0:nfx,0:nfy))  ; fvq(:,:)  = 0.0 ! v or v*zeta
+
+
+allocate(k2n(0:nkx,0:nfy))   ; k2n(:,:)   = 0.0 ! Laplacian
+allocate(rk2an(0:nkx,0:nfy)) ; rk2an(:,:) = 0.0 ! inverse of modified Laplacian
+allocate(kirk2an(0:nkx,0:nfy)) ;kirk2an(:,:) = 0.0 ! q --> v
+allocate(kjrk2an(0:nkx,0:nfy)) ;kjrk2an(:,:) = 0.0 ! q --> u
 
 allocate(cli(0:nkx,0:nfy)) ; cli(:,:)  = (0.0,0.0) ! linear time propagator 
-allocate(cvo(0:nkx,0:nfy)) ; cvo(:,:)  = (0.0,0.0) ! vorticity
-allocate(cnl0(0:nkx,0:nfy)); cnl0(:,:) = (0.0,0.0) ! Jacobian at time level  0
-allocate(cnl1(0:nkx,0:nfy)); cnl1(:,:) = (0.0,0.0) ! Jacobian at time level -1
-allocate(cnl2(0:nkx,0:nfy)); cnl2(:,:) = (0.0,0.0) ! Jacobian at time level -2
+allocate(cq(0:nkx,0:nfy)) ; cq(:,:)  = (0.0,0.0) ! vorticity
+allocate(cjac0(0:nkx,0:nfy)); cjac0(:,:) = (0.0,0.0) ! Jacobian at time level  0
+allocate(cjac1(0:nkx,0:nfy)); cjac1(:,:) = (0.0,0.0) ! Jacobian at time level -1
+allocate(cjac2(0:nkx,0:nfy)); cjac2(:,:) = (0.0,0.0) ! Jacobian at time level -2
+
 
 return
 end subroutine alloc_vars
@@ -563,16 +597,16 @@ do kk = 1,nmax_inigp
       if (lexist) then
          select case (kcode)
          case (138)
-            call readvar(ngx,kcode,gtp,gvo)
-            call grid_to_fourier(gvo,cvo,nfx,nfy,ngx,ngy)
-            cvo(0,0) = (0.0,0.0)
+            call readvar(ngx,kcode,gtp,gq)
+            call grid_to_fourier(gq,cq,nfx,nfy,ngx,ngy)
+            cq(0,0) = (0.0,0.0)
          end select
       else
          call mk_fname(ngx,kcode,gtp,fname)
          write(nudiag, &
          '(" *************************************************")')
          write(nudiag, &
-         '("*   File ", A ," not found, use default.")') trim(fname)
+         '("*   File ", a ," not found, use default.")') trim(fname)
          write(nudiag, &
          '(" *************************************************",/)')
       endif
@@ -588,14 +622,14 @@ do kk = 1,nmax_inigp
       if (lexist) then
          select case (kcode)
          case (138)
-            call readvar(ngx,kcode,gtp,gvo)
+            call readvar(ngx,kcode,gtp,gq)
          end select
       else
          call mk_fname(ngx,kcode,gtp,fname)
          write(nudiag, &
          '(" *************************************************")')
          write(nudiag, &
-         '("*   File ", A ," not found, use default.")') trim(fname)
+         '("*   File ", a ," not found, use default.")') trim(fname)
          write(nudiag, &
          '(" *************************************************",/)')
       endif
@@ -680,36 +714,52 @@ return
 end subroutine readvar
 
 
-! ****************************
-! * SUBROUTINE INIT_LIN_TPROP *
-! ****************************
-subroutine init_lin_tprop
+! **************************
+! * SUBROUTINE INIT_LTPROP *
+! **************************
+subroutine init_ltprop
 use quadmod
 implicit none
 
-real(8) :: k2
-complex(8) :: a,b,c
-integer :: i,j
+real(8)    :: k2,diss_sig,diss_lam,b_term
+complex(8) :: arg
+integer    :: i,j,n
 
+!--------------------------------------------------------------
 ! Time propagator of linear part of differential equation
 !
-! exp[-dt*(sig*(k**2)**psig + lam*(k**2)**plam) * (k**2)/(k**2+alpha)] *
-! (dt*beta*kx/(k**2+alpha))
-
+! cli = exp(arg)                      with
+!
+! arg = -dt*[diss_sig*k^2 + diss_lam*k^2 + beta_term]/(k^2+alpha)
+!
+!  with 
+!     diss_sig  = sum_j=1,sig_nmax sig(j)*k^(2*psig(j))
+!     diss_lam  = sum_j=1,lam_nmax lam(j)*k^(2*plam(j))
+!     b_term    = i*beta*kx
+!--------------------------------------------------------------
 do j = 0, nfy
    do i = 0, nkx
-      k2 = (pkx2(i)+pky2(j))
-      a = -(sig*k2**psig + lam*k2**plam)*k2/(k2+alpha)
-      b = cmplx(0.0,beta * ki(i) / (k2+alpha))
-      c = a+b
-      cli(i,j) = exp(dt*c)
+      diss_sig = 0.0
+      diss_lam = 0.0
+      k2       = ki2(i)+kj2(j)
+      do n = 1,sig_nmax
+         diss_sig = diss_sig - sig(n)*k2**psig(n)*k2/(k2+alpha)
+      enddo
+      do n = 1,lam_nmax
+         diss_lam = diss_lam - lam(n)*k2**plam(n)*k2/(k2+alpha)
+      enddo
+      b_term    = cmplx(0.0,beta * ki(i) / (k2+alpha))
+
+      arg       = dt*(diss_sig + diss_lam + b_term)
+
+      cli(i,j)  = exp(arg)
    enddo
 enddo
 
 cli(0,0) = (0.0,0.0)
 
 return
-end subroutine init_lin_tprop
+end subroutine init_ltprop
 
 
 ! *************
@@ -756,7 +806,7 @@ if (nforc .eq. 0) return
 ent=0.d0
 do j = 0, nfy
   do i = 0, nkx
-    k2 = pkx2(i)+pky2(j)
+    k2 = ki2(i) + kj2(j)
     if (j.ne.0.or.i.ne.0) then
       if (sqrt(k2).gt.kfmin.and.sqrt(k2).lt.kfmax) then
         nk = nk + 1
@@ -783,35 +833,195 @@ return
 end subroutine init_forc
 
 
+! ********
+! * Q2GUV *
+! *********
+subroutine q2guv
+use quadmod
+implicit none
+
+call q2uv
+call fourier_to_grid(fu,gu,nfx,nfy,ngx,ngy)
+call fourier_to_grid(fv,gv,nfx,nfy,ngx,ngy)
+
+return
+end subroutine q2guv
+
+
+! **********
+! * Q2GQUV *
+! **********
+subroutine q2gquv
+use quadmod
+implicit none
+
+call q2uv
+call fourier_to_grid(cq,gq,nfx,nfy,ngx,ngy)
+call fourier_to_grid(fu,gu,nfx,nfy,ngx,ngy)
+call fourier_to_grid(fv,gv,nfx,nfy,ngx,ngy)
+
+return
+end subroutine q2gquv
+
+
+! ****************
+! * WRITE_OUTPUT *
+! ****************
+subroutine write_output
+use quadmod
+implicit none
+
+if(tstep.ge.0.and.mod(tstep,ngp).eq.0)    call write_gp(nugp,gq,138,0)
+if(tstep.ge.0.and.mod(tstep,ntseri).eq.0) call write_tseri
+if(tstep.ge.0.and.mod(tstep,ncfl).eq.0)   call write_cfl
+
+return
+end subroutine write_output
+
+
+! ************
+! * WRITE_GP *
+! ************
+subroutine write_gp(ku,gpfld,kcode,klev)
+use quadmod
+implicit none
+
+integer :: ku,kcode,klev
+integer :: yy,mo,dd,hh,mm,ii
+real(8) :: gpfld(ngx,ngy)
+
+! Build a header for service format
+
+mm = mod(tstep,60)
+ii = tstep / 60
+hh = mod(ii,24)
+ii = ii / 24
+dd = mod(ii,30) + 1
+ii = ii / 30
+mo = mod(ii,12) + 1
+yy = ii / 12
+
+ihead(1) =    kcode 
+ihead(2) =    klev
+ihead(3) = dd + 100 * mo + 10000 * yy
+ihead(4) = mm + 100 * hh
+ihead(5) =    ngx ! 1st. dim
+ihead(6) =    ngy ! 2nd. dim
+ihead(7) =      0
+ihead(8) =      0
+
+write (ku) ihead
+write (ku) gpfld(:,:)
+
+return
+end subroutine write_gp
+
+
+! *****************************
+! * SUBROUTINE INIT_TSTEPPING *
+! *****************************
+subroutine init_tstepping
+use quadmod
+implicit none
+
+real(8) :: dt2 
+
+
+dt2 = dt/2
+
+select case (tstp_mthd)
+case (1)
+   call q2gquv
+   call jacobian
+   cjac1(:,:) = cjac0(:,:)
+   cjac2(:,:) = cjac1(:,:)
+
+   call write_output
+   !--- euler-step with dt/2
+   cq(:,:) = cli(:,:)*(cq(:,:)+dt2*cjac0(:,:))
+
+   call q2gquv
+   call jacobian
+   !--- euler-step with dt
+   cq(:,:) = cli(:,:)*(cq(:,:)+dt*cjac0(:,:))
+   tstep=tstep+1
+
+   call q2gquv
+   call jacobian
+   call write_output
+
+   !--- adams-bashford method 2nd order
+   cq(:,:) = cli(:,:) * (cq(:,:) + dt2 * (3.0 * cjac0(:,:) -            &
+             cli(:,:) * cjac1(:,:)))
+
+   cq(0,0) = (0.0,0.0)
+
+   if (nforc .ge. 1) call add_forc
+   cjac1(:,:) = cjac0(:,:)
+   tstep=tstep+1
+end select
+
+return
+end subroutine init_tstepping
+
+
 ! *********************
 ! * SUBROUTINE MASTER *
 ! *********************
 subroutine master
 use quadmod
+implicit none
 
 if (nshutdown > 0) return   ! if an error occured so far
 
 !--- determine final time step of run
 tstop = tstep + nsteps
 
-!--- start timestepping at the beginning of simulation
-if (tstep .eq. 0) call start_tstepping
+do while (tstep <= tstop)
+   call q2gquv
+   call jacobian
+   call write_output
+   call step_forward
+   if (nforc .ge. 1) call add_forc
+   tstep = tstep + 1
+   if (nstdout.ge.0 .and. mod(tstep,nstdout) == 0) then
+      write(*,*)' time step ',tstep
+   endif
+enddo
 
 return
 end subroutine master
 
 
-! ******************************
-! * SUBROUTINE START_TSTEPPING *
-! ******************************
-subroutine start_tstepping
+! ***************************
+! * SUBROUTINE STEP_FORWARD *
+! ***************************
+subroutine step_forward
 use quadmod
+implicit none
+
+real(8) :: c,c1
 
 
+select case (tstp_mthd)
+case (1)
+   c  = dt/12.0
+   c1 = 23.0 * c
 
+   !--- adams-bashford 3rd order
+   cq(:,:) = cli(:,:) * (cq(:,:) + c1 * cjac0(:,:) + c * cli(:,:) *  &
+             (-16.0 * cjac1(:,:) + 5.0 * cli(:,:)*cjac2(:,:)))
+   cq(0,0) = (0.0,0.0)
+
+   !--- shift time-levels (pointers are faster)
+   cjac2(:,:) = cjac1(:,:)
+   cjac1(:,:) = cjac0(:,:)
+
+end select
 
 return
-end subroutine start_tstepping
+end subroutine step_forward
+
 
 ! *********************
 ! * SUBROUTINE EPILOG *
@@ -824,12 +1034,12 @@ call write_rst
 
 call cpu_time(tmstop)
 tmrun = tmstop - tmstart
-isps    = nint(nsteps / tmrun)
+tsps    = nint(nsteps / tmrun)
 
 write(nudiag, &
  '(" *************************************************")')
 write(nudiag,'("  Total time in seconds: ",f15.2)') tmrun
-write(nudiag,'("  Time steps per second: ",i12)') isps
+write(nudiag,'("  Time steps per second: ",i12)') tsps
 write(nudiag, &
  '(" *************************************************")')
 
@@ -864,131 +1074,77 @@ end subroutine write_rst
 subroutine close_files
 use quadmod
 
-if (lrst) close(nurstini)
-if (lnl) close(nunl) 
+if (lrst)            close(nurstini)
+if (lnl)             close(nunl) 
 close(nurstfin)
 close(nudiag)
-close(nutseri)
-if (ncfl .gt. 0) close(nucfl)
-close (nuout)
+if (ntseri .ge. 0)   close(nutseri)
+if (ncfl .ge. 0)     close(nucfl)
+if (ngp .ge. 0)      close (nugp)
 
 return
 end subroutine close_files
 
-! integrazione secondo euler sulla parte non lineare ed
-! esatta su quella lineare.
 
-! z=cvo(t)
-! cnl=nlt(t)
-! znew=cvo(t+1)
-! dimensioni: (0:ngx+1,0:ngy+1)   versione ngx, ngy
-
-! ======
-! TEULER
-! ======
-
-subroutine teuler(cnl,pdt)
+! ************
+! * JACOBIAN *
+! ************
+subroutine jacobian
 use quadmod
 implicit none
 
-real(8), intent(in) :: pdt
-complex(8), intent(in) :: cnl(0:nkx,0:nfy)
+integer    :: i,j
 
-integer :: i
-integer :: j
+select case (jac_mthd)
 
-do j = 0, nfy
-   do i = 0, nkx
-      cvo(i,j)   = (cvo(i,j)+pdt*cnl(i,j))*cli(i,j) 
+case (1)
+   guq = gu*gq
+   gvq = gv*gq
+
+   call grid_to_fourier(guq,fuq,nfx,nfy,ngx,ngy)
+   call grid_to_fourier(gvq,fvq,nfx,nfy,ngx,ngy)
+
+   do j = 0, nfy
+      do i = 0, nkx
+         cjac0(i,j) = cmplx(  ki(i) * fuq(i+i+1,j) + kj(j)*fvq(i+i+1,j),  &
+                            - ki(i) * fuq(i+i  ,j) - kj(j)*fvq(i+i  ,j) )
+      enddo
    enddo
-enddo
+end select
 
-cvo(0,0)= (0.0,0.0)
+if (jac_scl .ne. 1.0) cjac0(:,:) = jac_scl*cjac0(:,:)
 
 return
-end
+end subroutine jacobian
 
 
-! calcolo del termine non lineare j=d(psi,z)/d(x,y)
-! in input: z
-! in output: cnl = - d(psi,z)/d(x,y) 
-!            v (=v) e um(=-u)
-! dimensioni: (n,n) - spazio di fourier (codificato)
-! versione ngx, ngy
-
-! =====
-! JACOB
-! =====
-
-subroutine jacob(cnl)
-use quadmod
-implicit none
-
-complex(8) :: cnl(0:nkx,0:nfy)
-
-call deriv
-
-! trasforma in reale
-
-call fourier_to_grid(cvo,gvo,nfx,nfy,ngx,ngy)
-call fourier_to_grid(fp1,gp1,nfx,nfy,ngx,ngy)
-call fourier_to_grid(fp2,gp2,nfx,nfy,ngx,ngy)
-
-if(tstep.gt.0.and.mod(tstep,nout).eq.0) call ecrire(nuout,gvo)
-
-! check whether stability is obtained.
-
-if(mod(tstep,ncfl).eq.0) call cfl_test
-
-! calcola i prodotti psi1 = v*z e psi2 = um*z
-
-gp1(:,:) = gp1(:,:) * gvo(:,:)
-gp2(:,:) = gp2(:,:) * gvo(:,:)
-
-! trasforma in fourier
-
-call grid_to_fourier(gp1,fp1,nfx,nfy,ngx,ngy)
-call grid_to_fourier(gp2,fp2,nfx,nfy,ngx,ngy)
-
-! calcola cnl= - jacobiano
-
-call nonlinear_terms(cnl)
-return
-end
-
-
-! calcola (u,-v) a partire da z nello spazio di fourier 
-! fp1 = ki * z / (-k**2) =  v
-! fp2 = kj * z / (-k**2) = -u
-
-! *********
-! * DERIV *
-! *********
-subroutine deriv
+! ********
+! * Q2UV *
+! ********
+subroutine q2uv
 use quadmod
 implicit none
 
 integer :: i,j
-real(8) :: k2
 
 do j = 0, nfy
    do i = 0, nkx
-      k2 = 1.0d0 / (pkx2(i) + pky2(j) + alpha)
-      fp1(i+i  ,j) =  ki(i) * aimag(cvo(i,j)) * k2
-      fp1(i+i+1,j) = -ki(i) * real (cvo(i,j)) * k2
-      fp2(i+i  ,j) =  kj(j) * aimag(cvo(i,j)) * k2
-      fp2(i+i+1,j) = -kj(j) * real (cvo(i,j)) * k2
+      fu(i+i  ,j) = -aimag(cq(i,j)) * kjrk2an(i,j)
+      fu(i+i+1,j) =  real (cq(i,j)) * kjrk2an(i,j)
+      fv(i+i  ,j) =  aimag(cq(i,j)) * kirk2an(i,j)
+      fv(i+i+1,j) = -real (cq(i,j)) * kirk2an(i,j)
    enddo
 enddo
 
 return
-end
+end subroutine q2uv
 
 
-! ***********
-! * FORCING *
-! ***********
-subroutine forcing
+
+! ***************
+! * ADD_FORCING *
+! ***************
+subroutine add_forc
 use quadmod
 implicit none
 integer :: i,j,ic,ifk
@@ -996,221 +1152,81 @@ real(8) :: k2
 complex(8) :: psif
 real(8) :: eni,enf,ran4
 
-! creates a forcing streamfunction (psifr,psifi)
-! the phase phi is uniformly distributed
-! between 0 and 2 pi, kept constant for the time tforc
-! and then changed.
-
 eni=0.d0
 enf=0.d0
 
 select case (nforc)
+   case (1)
+      do ifk = 1,nk
+         i = in(ifk,1)
+         j = in(ifk,2)
+!        psif = ampcoeff*exp(ci*twopi*0.1525125)
+         psif = ampcoeff*exp(ci*twopi)
+         k2 = ki2(i)+kj2(j)+alpha
+         eni = eni+(cq(i,j)*cq(i,j))/k2
+         cq(i,j) = cq(i,j)-k2*psif*rnxy
+         enf = enf+(cq(i,j)*cq(i,j))/k2
+      enddo
 
-  case (1)
-    do ifk = 1,nk
-      i = in(ifk,1)
-      j = in(ifk,2)
-!     psif = ampcoeff*exp(ci*twopi*0.1525125)
-      psif = ampcoeff*exp(ci*twopi)
-      k2 = pkx2(i)+pky2(j)+alpha
-      eni = eni+(cvo(i,j)*cvo(i,j))/k2
-      cvo(i,j) = cvo(i,j)-k2*psif*rnxy
-      enf = enf+(cvo(i,j)*cvo(i,j))/k2
-    enddo
+   case (2)
+      ic=tstep+1
+      if (mod(ic,itau).eq.0.) then
+         call random_number(ran4)
+         phi=ran4*twopi*ci
+      endif
+      psif=ampcoeff*exp(phi)
+      ! add the forcing to the spectral vorticity q -> q+ k2 *psif
+      do ifk=1,nk
+         i = in(ifk,1)
+         j = in(ifk,2)
+         k2 = ki2(i)+kj2(j)+alpha
+         eni=eni+(cq(i,j)*cq(i,j))/k2
+         cq(i,j) = cq(i,j)-k2*psif*rnxy
+         enf=enf+(cq(i,j)*cq(i,j))/k2
+      enddo
 
-  case (2)
-    ic=tstep+1
-    if (mod(ic,itau).eq.0.) then
-      call random_number(ran4)
-      phi=ran4*twopi*ci
-    endif
-    psif=ampcoeff*exp(phi)
-    ! add the forcing to the spectral vorticity z -> z+ k2 *psif
-    do ifk=1,nk
-      i = in(ifk,1)
-      j = in(ifk,2)
-      k2 = pkx2(i)+pky2(j)+alpha
-      eni=eni+(cvo(i,j)*cvo(i,j))/k2
-      cvo(i,j) = cvo(i,j)-k2*psif*rnxy
-      enf=enf+(cvo(i,j)*cvo(i,j))/k2
-    enddo
-
-  case (3)
-    do ifk=1,nk
-      i = in(ifk,1)
-      j = in(ifk,2)
-      call random_number(ran4)
-      psif = ampcoeff*exp(ci*twopi*ran4)
-      k2 = pkx2(i)+pky2(j)+alpha
-      eni=eni+(cvo(i,j)*cvo(i,j))/k2
-      cvo(i,j) = cvo(i,j)-k2*psif*rnxy
-      enf=enf+(cvo(i,j)*cvo(i,j))/k2
-    enddo
+   case (3)
+      do ifk=1,nk
+         i = in(ifk,1)
+         j = in(ifk,2)
+         call random_number(ran4)
+         psif = ampcoeff*exp(ci*twopi*ran4)
+         k2 = ki2(i)+kj2(j)+alpha
+         eni=eni+(cq(i,j)*cq(i,j))/k2
+         cq(i,j) = cq(i,j)-k2*psif*rnxy
+         enf=enf+(cq(i,j)*cq(i,j))/k2
+      enddo
 
 end select
 
 return
-end
-
-! integrazione adams-bashforth sulla parte non lineare ed
-! esatta su quella lineare.
-! schema di legras
-! z=z(t)
-! cnl=nlt(t)
-! cnlold=nlt(t-1)
-!       cnlold2=nlt(t-2)
-! znew=z(t+1)
-! dimensioni: (0:ngx/2,0:ngy+1) 
-! versione ngx, ngy
-
-! ======
-! TADBA2
-! ======
-subroutine tadba2 (cnl,cnlold)
-use quadmod
-implicit none
-
-complex(8) :: cnl(0:nkx,0:nfy),cnlold(0:nkx,0:nfy)
-integer :: i,j
-real(8) :: dt2
-
-dt2=dt*0.5
+end subroutine add_forc
 
 
-do j = 0, nfy
-   do i = 0, nkx
-      cvo(i,j)   = cvo(i,j)*cli(i,j)                          &
-    &                    + dt2*(3.0*cnl(i,j)*cli(i,j) -       &
-    &                      cnlold(i,j)*(cli(i,j)*cli(i,j)))
-   enddo
-enddo
-
-cvo(0,0) = (0.0,0.0)
-
-if (nforc .ge. 1) call forcing
-
-return
-end
-! ------------------------------------------------------------
-! ------------------------------------------------------------
-
-subroutine tadba3 (cnl,cnlold,cnlold2)
-use quadmod
-implicit none
-
-complex(8) :: cnl(0:nkx,0:nfy),cnlold(0:nkx,0:nfy)
-complex(8) :: cnlold2(0:nkx,0:nfy)
-integer :: i,j
-real(8) :: c
-
-c = dt/12.0
-
-do j = 0, nfy
-   do i = 0, nkx
-      cvo(i,j) = cvo(i,j)*cli(i,j)                         + &
-    &       c*(23.0*cnl(i,j)*cli(i,j)                      - &
-    &       16.0*cnlold(i,j)*(cli(i,j)*cli(i,j))           + &
-    &       5.0*cnlold2(i,j)*(cli(i,j)*cli(i,j)*cli(i,j)))
-   enddo
-enddo
-
-cvo(0,0) = (0.0,0.0)
-
-if (nforc .ge. 1) call forcing
-       
-return
-end
-
-
-! scrive n real*4 nel file binario ku dal vettore u. complementare ad lire
-
-! ======
-! ECRIRE
-! ======
-subroutine ecrire(ku,pz)
-use quadmod
-implicit none
-
-integer :: ku
-real(8) :: pz(ngx,ngy)
-integer :: yy,mo,dd,hh,mm,ii
-
-! Build a header for service format
-
-mm = mod(tstep,60)
-ii = tstep / 60
-hh = mod(ii,24)
-ii = ii / 24
-dd = mod(ii,30) + 1
-ii = ii / 30
-mo = mod(ii,12) + 1
-yy = ii / 12
-
-ihead(1) =    138 ! relative vorticity
-ihead(2) =      0 ! no level
-ihead(3) = dd + 100 * mo + 10000 * yy
-ihead(4) = mm + 100 * hh
-ihead(5) =    ngx ! 1st. dim
-ihead(6) =    ngy ! 2nd. dim
-ihead(7) =      0
-ihead(8) =      0
-
-write (ku) ihead
-write (ku) pz(:,:)
-
-return
-end
-
-
-! calcolo del termine non lineare.
-! in input: zp1 = z*d1psi = z*v
-!    zp2 = z*d2psi =  z*um (=-z*u)
-! in output: cnl = - d(psi,z)/d(x,y) 
-! dimensioni: (n,n) - spazio di fourier (codificato)
-! versione ngx, ngy
-
-! ==================
-! CALCULATE JACOBIAN
-! ==================
-subroutine nonlinear_terms(pnl)
-use quadmod
-implicit none
-
-complex(8) :: pnl(0:nkx,0:nfy) 
-integer i,j
-
-do j = 0, nfy
-   do i = 0, nkx
-      pnl(i,j) = cmplx(kj(j) * fp1(i+i+1,j) - ki(i)*fp2(i+i+1,j)   &
-                      ,ki(i) * fp2(i+i  ,j) - kj(j)*fp1(i+i  ,j))
-   enddo
-enddo
-
-return
-end
-
-! =================
-! WRITE TIME SERIES 
-! =================
+! ***************
+! * WRITE_TSERI *
+! ***************
 subroutine write_tseri
 use quadmod
 implicit none
 
-real(8) :: ener,enst
+real(8) :: ener,enst,qint
 
-ener = 0.5 * rnxy * (sum(gp1(:,:) * gp1(:,:)) + sum(gp2(:,:) * gp2(:,:)))
-enst = 0.5 * rnxy *  sum(gvo(:,:) * gvo(:,:))
 
-write(nutseri,*) tstep,ener,enst
+qint = sum(gq(:,:))
+ener = 0.5 * rnxy * (sum(gu(:,:) * gu(:,:)) + sum(gv(:,:) * gv(:,:)))
+enst = 0.5 * rnxy *  sum(gq(:,:) * gq(:,:))
+
+write(nutseri,*) tstep,qint,ener,enst
 
 return
-end
+end subroutine write_tseri
 
-! ========
-! CFL_TEST
-! ========
 
-subroutine cfl_test
+! *************
+! * WRITE_CFL *
+! *************
+subroutine write_cfl
 use quadmod
 implicit none
 
@@ -1218,126 +1234,65 @@ real(8) :: cfl
 real(8) :: maxu,maxv
 
 
-! checking whether the numerical stability is obtained, using the
-! courant number (cfl criteria). this number should be less than 0.5.
+!--- check courant number 
+maxu = maxval(abs(gu(:,:))) * dt * ngx / lx
+maxv = maxval(abs(gv(:,:))) * dt * ngy / ly
 
-maxu = maxval(abs(gp2(:,:))) * dt * ngx / lx
-maxv = maxval(abs(gp1(:,:))) * dt * ngy / ly
+cfl = max(maxu,maxv)
 
-if (maxu > maxv) then
-   cfl = maxu
-else
-   cfl = maxv
-endif
-
-write(nucfl,*) tstep,real(cfl)
+write(nucfl,*) tstep,cfl
 
 return
-end
+end subroutine write_cfl
 
 
-!******************************************************************************|
-! fft.f90, the fft package for diablo.                             version 0.3e
-!
-! this file isolates all calls to the fftw package (available at: www.fftw.org)
-! these wrapper routines were written by t. bewley (spring 2001).
-!******************************************************************************|
-
-
-!----*|--.---------.---------.---------.---------.---------.---------.-|-------|
-! the arrangement of the significant real numbers in the arrays (denoted by +)
-! in physical space, in fourier space, and in fourier space after packing are
-! shown below for the 2d (x-z) plane.  the third direction (y) is handled in
-! an identical matter as the z direction shown here.
-!
-!       oooooooooooooooooo         oooooooooooooooooo         oooooooooooooooooo
-!       oooooooooooooooooo         oooooooooooooooooo         oooooooooooooooooo
-! ngy-1 ++++++++++++++++oo     -1  ++++++++++++oooooo         oooooooooooooooooo
-!       ++++++++++++++++oo     -2  ++++++++++++oooooo         oooooooooooooooooo
-!       ++++++++++++++++oo     -3  ++++++++++++oooooo         oooooooooooooooooo
-!       ++++++++++++++++oo         ++++++++++++oooooo         oooooooooooooooooo
-!       ++++++++++++++++oo    -nky ++++++++++++oooooo         oooooooooooooooooo
-!       ++++++++++++++++oo         oooooooooooooooooo     -1  ++++++++++++oooooo
-!       ++++++++++++++++oo         oooooooooooooooooo     -2  ++++++++++++oooooo
-!       ++++++++++++++++oo         oooooooooooooooooo     -3  ++++++++++++oooooo
-!       ++++++++++++++++oo         oooooooooooooooooo         ++++++++++++oooooo
-!       ++++++++++++++++oo         oooooooooooooooooo    -nky ++++++++++++oooooo
-!       ++++++++++++++++oo     nky ++++++++++++oooooo     nky ++++++++++++oooooo
-!       ++++++++++++++++oo         ++++++++++++oooooo         ++++++++++++oooooo
-!    3  ++++++++++++++++oo      3  ++++++++++++oooooo      3  ++++++++++++oooooo
-!    2  ++++++++++++++++oo      2  ++++++++++++oooooo      2  ++++++++++++oooooo
-!    1  ++++++++++++++++oo      1  ++++++++++++oooooo      1  ++++++++++++oooooo
-!    0  ++++++++++++++++oo      0  +o++++++++++oooooo      0  +o++++++++++oooooo
-!       ^^^^           ^           ^ ^ ^     ^                ^ ^ ^     ^
-!       0123           ngx-1        0 1 2     nkx              0 1 2     nkx
-!
-!       physical space              fourier space         fourier space (packed)
-!
-! after the real->fourier transform, the significant coefficients are put next
-! to each other in the array, so a loop such as
-!
-!        do j=0,nfy           [where nfy = 2*nky = 2*(ngy/3) ]
-!          do i=0,nkx          [where  nkx = ngx/3             ]
-!            cp(i,j)= ...
-!          end do
-!        end do
-!
-! includes all the fourier coefficients of interest.  the subsequent loops in
-! fourier space just work on these coefficients in the matrix.
-!  
-! before a fourier->real transform, the significant coefficients are unpacked
-! and the higher wavenumbers are set to zero before the inverse transform.
-! this has the effect of doing the required dealiasing.
-!
-!----*|--.---------.---------.---------.---------.---------.---------.-|-------|
-
-!----*|--.---------.---------.---------.---------.---------.---------.-|-------|
-      subroutine init_fft
-!----*|--.---------.---------.---------.---------.---------.---------.-|-------|
-      use quadmod
-      implicit none
-      integer :: i,j
-
-        do i=0,nkx
-          kx(i)=i*pi
-          kx2(i)=kx(i)*kx(i)
-          pkx2(i)=kx2(i)/(pi*pi)
-          cikx(i)=ci*kx(i)
-        end do
-
-        pkx2(0) = 1.0 ! avoid divison by zero
-
-        do j=0,nky
-          ky(j)=j*pi
-        end do
-        do j=1,nky
-          ky(nfy+1-j)=-j*pi
-        end do
-        do j=0,nfy
-          ky2(j)=ky(j)*ky(j)
-          ciky(j)=ci*ky(j)
-          pky2(j)=ky2(j)/(pi*pi)
-        end do
-
-      return
-      end
-
-! **************
-! * check_diff *
-! **************
-
-subroutine check_diff(pold,pnew,ytext)
+! ************
+! * INIT_OPS *
+! ************
+subroutine init_ops
 use quadmod
-real(8) :: pold(0:ngx+1,0:ngy+1)
-real(8) :: pnew(0:nfx,0:nfy)
+implicit none
+
+integer :: i,j    
+ 
+ki2    = ki*ki
+ki2(0) = 1.0    
+
+
+kj2    = kj*kj
+
+do j = 0, nfy
+   do i = 0, nkx
+      k2n(i,j)   = (ki2(i)+kj2(j))
+      rk2an(i,j) = 1.0d0/(k2n(i,j)+alpha)
+      kirk2an(i,j) = ki(i)*rk2an(i,j)
+      kjrk2an(i,j) = kj(j)*rk2an(i,j)
+   enddo
+enddo
+
+return
+end subroutine init_ops
+
+
+! **************
+! * CHECK_DIFF *
+! **************
+subroutine check_diff(cold,cnew,ytext)
+use quadmod
+complex(8) :: cold(0:nkx,0:nfy)
+complex(8) :: cnew(0:nkx,0:nfy)
 character(*) :: ytext
 
-write (88,*) ytext
-write (88,*) "max old  = ",maxval(pold)
-write (88,*) "max new  = ",maxval(pnew)
-write (88,*) "max diff = ",maxval(pnew-pold(0:nfx,0:nfy))
-write (88,*) "min old  = ",minval(pold)
-write (88,*) "min new  = ",minval(pnew)
-write (88,*) "min diff = ",minval(pnew-pold(0:nfx,0:nfy))
+write (nudiag,*) ytext
+write (nudiag,*) "max old  = ",abs(maxval(real(cold)))+abs(maxval(aimag(cold)))
+write (nudiag,*) "max new  = ",abs(maxval(real(cnew)))+abs(maxval(aimag(cnew)))
+write (nudiag,*) "max diff = ",abs(maxval(real (cnew-cold(0:nkx,0:nfy)))) + &
+                               abs(maxval(aimag(cnew-cold(0:nkx,0:nfy))))
+write (nudiag,*) "min old  = ",abs(minval(real(cold)))+abs(minval(aimag(cold)))
+write (nudiag,*) "min new  = ",abs(minval(real(cnew)))+abs(minval(aimag(cnew)))
+write (nudiag,*) "min diff = ",abs(minval(real (cnew-cold(0:nkx,0:nfy)))) + &
+                               abs(minval(aimag(cnew-cold(0:nkx,0:nfy))))
+
+
 return
 end

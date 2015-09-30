@@ -592,15 +592,41 @@ The system can still be solved exactly if one includes a linear
 dissipation term $\hat{D}$. For more details see subsection
 \ref{ssec_Dschemes}. The Jacobian $\hat{J}$, forcing $\hat{F}$
 and dissipation $\hat{D}$ are treated in a separate subsection each,
-since there are many different ways represent and define them.
+since there are different ways to represent and define them.
 
 \section{Dissipation schemes} 
 \label{ssec_Dschemes}
-By default viscosity (dissipation at small scales) and friction
-(dissipation at large scales) is parameterized by positive and
-negative powers of the Laplacian respectively 
-(see equation equation \ref{eq_})
- 
+By default viscosity (internal dissipation) and friction
+(dissipation at the boundaries of the fluids) is parameterized 
+by positive and negative powers of the Laplacian respectively given
+by equation (\ref{eq_Laplace_dissip}). In spectral space the dissipation
+operator reads
+\begin{equation} \label{eq_Laplace_dissip_Fourier}
+   D \ \hat{q}(\mathbf{k})
+    = - \left[
+         \sigma \left(k_{x}^{2} + k_{y}^{2} \right)^{p_{\sigma}}
+            + 
+         \lambda \left(k_{x}^{2} + k_{y}^{2} \right)^{p_{\lambda}}
+        \right]
+        \hat{q}(\mathbf{k}).
+\end{equation}
+Using the definitions $\sigma$ and $\lambda$ of (\ref{eq_siglam})
+we can write the dissipation operator (\ref{eq_Laplace_dissip_Fourier})
+in the form
+\begin{equation} \label{eq_Laplace_dissip_Fourier2}
+   D \ \hat{q}(\mathbf{k})
+    = - \left[
+         \frac{1}{t_{\sigma}} 
+         \left(\frac{1}{k_{\sigma}}\right)^{2 p_{\sigma}}  
+         \left(k_{x}^{2} + k_{y}^{2} \right)^{p_{\sigma}}
+          + 
+         \frac{1}{t_{\lambda}} 
+         \left(\frac{1}{k_{\lambda}}\right)^{2 p_{\lambda}}
+         \left(k_{x}^{2} + k_{y}^{2} \right)^{p_{\lambda}}
+        \right]
+        \hat{q}(\mathbf{k}).
+\end{equation}
+Mind that $p_{\lambda} \le 0$. 
 
 
 \section{Forcing schemes}

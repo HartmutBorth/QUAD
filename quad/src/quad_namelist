@@ -1,16 +1,18 @@
  $quad_nl
- sig     = 0.1E-4
- lam     = 0.1E-4
- inigp   = 138,139
- inisp   = 138,139
- nsteps  = 10000
- nout    = 200
- nforc   = 0
- kfmin   = 5
- kfmax   = 7
- aforc   = 0.001
- tforc   = 0.01
- alpha   = 0
- beta    = 0
+ diss_mthd = 1
+ jac_scl   = 1.0
+ dt        = 1.0d-3
+ myseed    = 1,2,3,4,5,6,7,8
+ inigp     = 138
+ inisp     = 0
+ nsteps    = 50000
+ ngp       = 250
+ ncfl      = 500
+ nforc     = 0
+ kfmin     = 5
+ kfmax     = 7
+ aforc     = 0.0001
+ tforc     = 0.01
+ alpha     = 0.0
+ beta      = 0.0
  /
-

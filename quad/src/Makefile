@@ -24,16 +24,16 @@ clean:
 	rm -f quad.x *.o *.mod
 
 cleanall:
-	rm -f quad.x *.o *.mod quad_out quad_out.nc quad_tseri quad_cfl quad_diag quad_rstini quad_rstfin
+	rm -f quad.x *.o *.mod quad_gp quad_gp.nc quad_tseri quad_cfl quad_diag quad_rstini quad_rstfin
 
 run:
 	time quad.x $(NGX)
 
 nc:	
-	cdo -f nc copy quad_out quad_out.nc
+	cdo -f nc copy quad_gp quad_gp.nc
 
 view:
-	ncview quad_out.nc
+	ncview quad_gp.nc
 all:
 	make cleanall
 	make

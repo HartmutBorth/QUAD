@@ -161,34 +161,59 @@ the dissipation term $D$ on the left hand side of the equation
  model - to describe this term is to use a linear operator wich is a
 superposition of powers of the Laplacian. 
 The default in the fluid simulator is
-\begin{equation} \label{eq_dissip}
-  D = \left[ \ 
-       \frac{1}{\sigma} \ 
-       \left(
-        - L^{2}_{\mathrm{min}} \  \Delta 
-       \right)^{s}
-       +
-       \frac{1}{\lambda} \ 
-       \left(
-        - L^{2}_{\mathrm{max}} \  \Delta 
-       \right)^{l} \ 
-      \right] q,
+\begin{equation} \label{eq_Laplace_dissip}
+  D \ q = - \left[\sigma \left(-1 \right)^{p_{\sigma}} \Delta^{p_{\sigma}}
+                     +
+                  \lambda \left(-1 \right)^{p_{\lambda}} \Delta^{p_{\lambda}}
+            \right] q
+        = - \left[ 
+              \frac{\left(-1 \right)^{p_{\sigma}}}{t_{\sigma}} 
+              \left( 
+               \frac{L_{\sigma}}{2 \pi}
+              \right)^{2 p_{\sigma}}
+              \Delta^{p_{\sigma}}
+               +
+              \frac{\left(-1 \right)^{p_{\lambda}}}{t_{\lambda}} 
+              \left( 
+                \frac{L_{\lambda}}{2 \pi}
+              \right)^{2 p_{\lambda}}
+              \Delta^{p_{\lambda}}
+            \right] q,
 \end{equation}
-where $L_{\mathrm{min}}$ and $L_{\mathrm{max}}$ are the small and 
+where $L_{\sigma}$ and $L_{\lambda}$ are the small and 
 large-scale cut-off length scales. The corresponding small and 
-large-scale "damping" time scales are given by $\sigma$ and $\lambda$.
-The powers $s$ of small-scale viscosity are in the range 
-$s \in [1,2,3, \ \dots \ ]$ and the powers $l$ of large-scale friction
-are in the range $l \in [0,-1,-2,-3, \ \dots \ ]$. For $s = 1$ and 
-$l = 0$  we speak of viscosity and linear drag (friction), for
-$s > 1$ and $l < 0$ of hyperviscosity and hypofriction          
-(see also \cite{danilovandgurarie2001}). Above dissipation operator
-is as special case of dissipation operators which are polynomials 
-with positive and negative powers of the Laplacian. In Fourier space 
-(see subsection \ref{ssec_evolfourier}) the dissipation operators of
-this class reduce to the multiplication with polynomials in positive 
-and negative powers of the wave numbers. More general dissipation 
-operators can be constructed directly in Fourier space 
+large-scale "damping" time scales are given by $t_{\sigma}$ 
+and $t_{\lambda}$. The powers $p_{\sigma}$ of small-scale 
+viscosity are in the range of $p_{\sigma} \in [1,2,3, \ \dots \ ]$ 
+and the powers $p_{\lambda}$ of large-scale friction are in the 
+range $p_{\lambda} \in [0,-1,-2,-3, \ \dots \ ]$. 
+For $p_{\sigma} = 1$ and $p_{\lambda} = 0$ we speak of viscosity
+and linear drag (friction), for $p_{\sigma} > 1$ and $p_{\lambda} < 0$
+of hyperviscosity and hypofriction (see also \cite{danilovandgurarie2001}).
+From equation (\ref{eq_Laplace_dissip}) it follows that the coefficients
+$\sigma$ and $\lambda$ can be written by
+\begin{equation} \label{eq_siglam}
+  \sigma  = \left(\frac{L_{\sigma}}{2 \pi} \right)^{2 p_{\sigma}}
+            \ \frac{1}{t_{\sigma}} 
+          = \left(\frac{1}{k_{\sigma}}\right)^{2 p_{\sigma}}
+            \ \frac{1}{t_{\sigma}} 
+  \ \ \mbox{and} \ \
+  \lambda = \left(\frac{L_{\lambda}}{2 \pi} \right)^{2 p_{\lambda}}
+            \ \frac{1}{t_{\lambda}}
+          = \left(\frac{1}{k_{\lambda}} \right)^{2 p_{\lambda}}
+            \ \frac{1}{t_{\lambda}}.
+\end{equation}
+We have chosen the additional factor of $2 \pi$ since finally the
+fluid domain is rescaled to multiples of $2 \pi$. Using this scaling
+the coefficients $\sigma$ and $\lambda$ are characterized respectively 
+by the damping the time scales $t_{\sigma}$ and $t_{\lambda}$ as well
+as the cut-off wave numbers $k_{\sigma}$ and $k_{\lambda}$.
+Above dissipation operator is a special case of dissipation operators 
+which are polynomials with positive and negative powers of the Laplacian. 
+In Fourier space (see subsection \ref{ssec_evolfourier}) the dissipation 
+operators of this class reduce to the multiplication with polynomials 
+in positive and negative powers of the wave numbers. More general 
+dissipation operators can be constructed directly in Fourier space 
 (see subsection \ref{ssec_Dschemes}).
 
 \subsection{Forcing}
