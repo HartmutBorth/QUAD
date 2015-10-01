@@ -40,3 +40,13 @@ all:
 	make run
 	make nc
 	make view
+allrst:
+	make cleanall
+	make
+	make run
+	make nc
+	cp quad_gp.nc quad_gp_01.nc
+	cp quad_rstfin quad_rstini
+	make run
+	make nc
+	cp quad_gp.nc quad_gp_02.nc

@@ -86,16 +86,16 @@ character (256) :: quad_diag      = "quad_diag"
 integer :: ihead(8)
 
 !--- codes of variables to be read at initialization
-integer, parameter :: nmax_inigp = 5
-integer, parameter :: nmax_inisp = 5
-integer :: inigp(nmax_inigp) = &
+integer, parameter :: ninigp = 5
+integer, parameter :: ninisp = 5
+integer :: inigp(ninigp) = &
    (/ 138, &
        0 , &     
        0 , &     
        0 , &     
        0   &    
    /) 
-integer :: inisp(nmax_inisp) = &
+integer :: inisp(ninisp) = &
    (/  0 , &
        0 , &     
        0 , &     
@@ -149,44 +149,44 @@ integer :: diss_mthd  = 1  ! dissipation method
 ! Laplacian viscosity and friction !
 !----------------------------------!
 
-integer, parameter :: sig_nmax = 2 ! maximum number of terms of Laplacian 
+integer, parameter :: nsig = 2 ! maximum number of terms of Laplacian 
                                    ! dissipation on small scales
  
-integer, parameter :: lam_nmax = 2 ! maximum number of terms of Laplacian 
+integer, parameter :: nlam = 2 ! maximum number of terms of Laplacian 
                                    ! dissipation on large scales
 
 !--- definition of dissipation on small scales
-real(8) :: psig (sig_nmax) =  & ! powers of Laplacian parameterizing
+real(8) :: psig (nsig) =      & ! powers of Laplacian parameterizing
        (/ 1.d0,               & ! small-scale dissipation psig > 0
           4.d0                &
        /)
-real(8) :: sig(sig_nmax)   =  & ! coefficients of different powers
-       (/ 9.765625d-05,      & ! of the Laplacian [m^2*psig/s]
-          9.094947d-11       & 
+real(8) :: sig(nsig)   =      & ! coefficients of different powers
+       (/ 9.765625d-05,       & ! of the Laplacian [m^2*psig/s]
+          9.094947d-11        & 
        /)
-real(8) :: rtsig(sig_nmax) =  & ! 1/time-scale of different powers
+real(8) :: rtsig(nsig) =      & ! 1/time-scale of different powers
        (/ 1.d-1,              & ! of the Laplacian [1/s]
           1.d+2               & 
        /)
-real(8) :: ksig (sig_nmax) =  & ! lower "cut-off" wave number of different
+integer :: ksig (nsig) =      & ! lower "cut-off" wave number of different
        (/ 32,                 & ! powers of Laplacian
           32                  &
        /)
 
 !--- definition of dissipation on large scales
-real(8) :: plam (lam_nmax) =  & ! powers of Laplacian modelling viscosity
+real(8) :: plam (nlam) =      & ! powers of Laplacian modelling viscosity
        (/ -1.d0,              & ! on large scales plam <= 0
           -4.d0               &
        /)      
-real(8) :: lam(lam_nmax)   =  & ! coefficients of different powers
+real(8) :: lam(nlam)   =      & ! coefficients of different powers
        (/ 0.d0,               & ! of the Laplacian [m^(-2*psig)/s]
           0.d0                & 
        /)
-real(8) :: rtlam(lam_nmax) =  & ! 1/time-scale of different powers
+real(8) :: rtlam(nlam) =      & ! 1/time-scale of different powers
        (/ 0.d0,               & ! of the Laplacian [1/s]
           0.d0                & 
        /)
-real(8) :: klam (lam_nmax) =  & ! lower "cut-off" wave number of different
+integer :: klam (nlam) =      & ! lower "cut-off" wave number of different
        (/ 1,                  & ! powers of Laplacian
           1                   &
        /)
@@ -347,7 +347,7 @@ call init_ops
 if (lrst) call check_rst
 if (lrst) call read_rst
 if (lnl)  call read_nl
-call read_ini
+if (tstep .eq. 0) call read_ini
 call init_ltprop
 call init_rand
 call init_forc
@@ -429,8 +429,51 @@ write(nudiag, &
 write(nudiag, &
  '(" *************************************************",/)')
 
-call get_restart_integer('tstep',tstep)
-call get_restart_array('seed',seed,nseedlen,nseedlen,1)
+
+!--- namelist parameters
+
+call get_restart_iarray('nsteps',nsteps,1,1)
+call get_restart_iarray('ngp',ngp,1,1)
+call get_restart_iarray('inigp',inigp,ninigp,1)
+call get_restart_iarray('inisp',inisp,ninisp,1)
+call get_restart_iarray('tstp_mthd',tstp_mthd,1,1)
+call get_restart_iarray('ncfl',ncfl,1,1)
+call get_restart_array ('dt',dt,1,1)
+call get_restart_array ('alpha',alpha,1,1)
+call get_restart_array ('beta',beta,1,1)
+call get_restart_array ('lx',lx,1,1)
+call get_restart_array ('ly',ly,1,1)
+call get_restart_array ('sig',sig,nsig,1)
+call get_restart_array ('psig',psig,nsig,1)
+call get_restart_array ('rtsig',rtsig,nsig,1)
+call get_restart_iarray('ksig',ksig,nsig,1)
+call get_restart_array ('lam',lam,nlam,1)
+call get_restart_array ('plam',plam,nlam,1)
+call get_restart_array ('rtlam',rtlam,nlam,1)
+call get_restart_iarray('klam',klam,nlam,1)
+call get_restart_iarray('diss_mthd',diss_mthd,1,1)
+call get_restart_iarray('nforc',nforc,1,1)
+call get_restart_iarray('kfmin',kfmin,1,1)
+call get_restart_iarray('kfmax',kfmax,1,1)
+call get_restart_array ('aforc',aforc,1,1)
+call get_restart_array ('tforc',tforc,1,1)
+call get_restart_iarray('myseed',myseed,mxseedlen,1)
+call get_restart_iarray('ntseri',ntseri,1,1)
+call get_restart_iarray('nstdout',nstdout,1,1)
+call get_restart_iarray('jac_mthd',jac_mthd,1,1)
+call get_restart_iarray('ndiag',ndiag,1,1)
+call get_restart_array ('jac_scl',jac_scl,1,1)
+
+!--- additional parameters
+call get_restart_iarray('ngx',ngx,1,1)
+call get_restart_iarray('tstep',tstep,1,1)
+call get_restart_iarray('seed',seed,nseedlen,1)
+
+!--- fluid state
+call get_restart_carray('cq',cq,nkx+1,nfy+1)
+call get_restart_carray('cjac0',cjac0,nkx+1,nfy+1)
+call get_restart_carray('cjac1',cjac1,nkx+1,nfy+1)
+call get_restart_carray('cjac2',cjac2,nkx+1,nfy+1)
 
 return
 end subroutine read_rst
@@ -590,7 +633,7 @@ character(256)  :: fname
 
 !--- check if GP<ngx>_var<kcode>.srv is present
 gtp = "GP"
-do kk = 1,nmax_inigp
+do kk = 1,ninigp
    kcode = inigp(kk)
    if (kcode .gt. 0) then
       call checkvar(ngx,kcode,gtp,lexist)
@@ -606,7 +649,7 @@ do kk = 1,nmax_inigp
          write(nudiag, &
          '(" *************************************************")')
          write(nudiag, &
-         '("*   File ", a ," not found, use default.")') trim(fname)
+         '(" *   File ", a ," not found, use default")') trim(fname)
          write(nudiag, &
          '(" *************************************************",/)')
       endif
@@ -615,8 +658,8 @@ enddo
 
 !--- check if file SP<ngx>_var<kcode>.srv is present
 gtp = "SP"
-do kk = 1,nmax_inigp
-   kcode = inigp(kk)
+do kk = 1,ninisp
+   kcode = inisp(kk)
    if (kcode .gt. 0) then
       call checkvar(ngx,kcode,gtp,lexist)
       if (lexist) then
@@ -629,7 +672,7 @@ do kk = 1,nmax_inigp
          write(nudiag, &
          '(" *************************************************")')
          write(nudiag, &
-         '("*   File ", a ," not found, use default.")') trim(fname)
+         '(" *   File ", a ," not found, use default")') trim(fname)
          write(nudiag, &
          '(" *************************************************",/)')
       endif
@@ -651,11 +694,11 @@ character(256) :: fname
 integer :: kcode,kgx
 
 if (kgx < 100) then
-  write(fname,'(A2,I2.2,"_var",I4.4,".srv")') gtp,kgx,kcode
+  write(fname,'(a2,i2.2,"_var",i4.4,".srv")') gtp,kgx,kcode
 elseif (kgx < 1000) then
-  write(fname,'(A2,I3.3,"_var",I4.4,".srv")') gtp,kgx,kcode
+  write(fname,'(a2,i3.3,"_var",i4.4,".srv")') gtp,kgx,kcode
 else
-  write(fname,'(A2,I4.4,"_var",I4.4,".srv")') gtp,kgx,kcode
+  write(fname,'(a2,i4.4,"_var",i4.4,".srv")') gtp,kgx,kcode
 endif
 
 fname = trim(fname)
@@ -733,8 +776,8 @@ integer    :: i,j,n
 ! arg = -dt*[diss_sig*k^2 + diss_lam*k^2 + beta_term]/(k^2+alpha)
 !
 !  with 
-!     diss_sig  = sum_j=1,sig_nmax sig(j)*k^(2*psig(j))
-!     diss_lam  = sum_j=1,lam_nmax lam(j)*k^(2*plam(j))
+!     diss_sig  = sum_j=1,nsig sig(j)*k^(2*psig(j))
+!     diss_lam  = sum_j=1,nlam lam(j)*k^(2*plam(j))
 !     b_term    = i*beta*kx
 !--------------------------------------------------------------
 do j = 0, nfy
@@ -742,10 +785,10 @@ do j = 0, nfy
       diss_sig = 0.0
       diss_lam = 0.0
       k2       = ki2(i)+kj2(j)
-      do n = 1,sig_nmax
+      do n = 1,nsig
          diss_sig = diss_sig - sig(n)*k2**psig(n)*k2/(k2+alpha)
       enddo
-      do n = 1,lam_nmax
+      do n = 1,nlam
          diss_lam = diss_lam - lam(n)*k2**plam(n)*k2/(k2+alpha)
       enddo
       b_term    = cmplx(0.0,beta * ki(i) / (k2+alpha))
@@ -1057,12 +1100,52 @@ use quadmod
 implicit none
 
 
-call put_restart_integer('ngx',ngx)
-call put_restart_integer('tstep',tstep)
+!--- namelist parameters
+call put_restart_iarray('nsteps',nsteps,1,1)
+call put_restart_iarray('ngp',ngp,1,1)
+call put_restart_iarray('inigp',inigp,ninigp,1)
+call put_restart_iarray('inisp',inisp,ninisp,1)
+call put_restart_iarray('tstp_mthd',tstp_mthd,1,1)
+call put_restart_iarray('ncfl',ncfl,1,1)
+call put_restart_array ('dt',dt,1,1)
+call put_restart_array ('alpha',alpha,1,1)
+call put_restart_array ('beta',beta,1,1)
+call put_restart_array ('lx',lx,1,1)
+call put_restart_array ('ly',ly,1,1)
+call put_restart_array ('sig',sig,nsig,1)
+call put_restart_array ('psig',psig,nsig,1)
+call put_restart_array ('rtsig',rtsig,nsig,1)
+call put_restart_iarray('ksig',ksig,nsig,1)
+call put_restart_array ('lam',lam,nlam,1)
+call put_restart_array ('plam',plam,nlam,1)
+call put_restart_array ('rtlam',rtlam,nlam,1)
+call put_restart_iarray('klam',klam,nlam,1)
+call put_restart_iarray('diss_mthd',diss_mthd,1,1)
+call put_restart_iarray('nforc',nforc,1,1)
+call put_restart_iarray('kfmin',kfmin,1,1)
+call put_restart_iarray('kfmax',kfmax,1,1) 
+call put_restart_array ('aforc',aforc,1,1)
+call put_restart_array ('tforc',tforc,1,1)
+call put_restart_iarray('myseed',myseed,mxseedlen,1)
+call put_restart_iarray('ntseri',ntseri,1,1)
+call put_restart_iarray('nstdout',nstdout,1,1)
+call put_restart_iarray('jac_mthd',jac_mthd,1,1)
+call put_restart_iarray('ndiag',ndiag,1,1)
+call put_restart_array ('jac_scl',jac_scl,1,1)
+
+
+!--- additional parameters
+call put_restart_iarray('ngx',ngx,1,1)
+call put_restart_iarray('tstep',tstep,1,1)
 
 call random_seed(get=seed)
-call put_restart_array('seed',seed,nseedlen,nseedlen,1)
+call put_restart_iarray('seed',seed,nseedlen,1)
 
+!--- fluid state
+call put_restart_carray('cq',cq,nkx+1,nfy+1)
+call put_restart_carray('cjac0',cjac0,nkx+1,nfy+1)
+call put_restart_carray('cjac1',cjac1,nkx+1,nfy+1)
+call put_restart_carray('cjac2',cjac2,nkx+1,nfy+1)
 
 return
 end subroutine write_rst
@@ -1138,7 +1221,6 @@ enddo
 
 return
 end subroutine q2uv
-
 
 
 ! ***************

@@ -5,6 +5,9 @@ module rstmod
 use quadmod, only: nurstini,quad_rstini, nurstfin, nudiag
 
 integer, parameter :: nrstdim  = 200   ! Max number of records
+integer, parameter :: nrstdiag = 5     ! 1D restart arrays up 
+                                       ! to size nrstdiag will be  
+                                       ! written to quad_diag
 integer            :: nexcheck =   1   ! Extended checks
 integer            :: nrstnum  =   0   ! Actual number of records
 integer            :: nlastrec =   0   ! Last read record
@@ -19,7 +22,9 @@ end module rstmod
 ! ************************
 subroutine check_rst
 use rstmod
+implicit none
 
+integer :: iostat,j
 character (len=16) :: yn ! variable name
 
 
@@ -28,8 +33,6 @@ write(nudiag, &
 write(nudiag,'("  Checking for restart file <quad_rstini>")')
 write(nudiag, &
  '(" *************************************************",/)')
-
-
 
 do
    read (nurstini,IOSTAT=iostat) yn
@@ -56,46 +59,33 @@ nlastrec = nrstnum
 return
 end subroutine check_rst
 
-
-! **********************************
-! * SUBROUTINE GET_RESTART_INTEGER *
-! **********************************
-subroutine get_restart_integer(yn,kv)
-use rstmod
-
-character (len=*) :: yn
-integer :: kv
-
-do j = 1 , nrstnum
-   if (trim(yn) == trim(yrstnam(j))) then
-      call fileseek(yn,j)
-      read (nurstini) kv
-      nlastrec = nlastrec + 1
-      return
-   endif
-enddo
-if (nexcheck == 1) then
-   write(nudiag,*) '*** Error in get_restart_integer ***'
-   write(nudiag,*) 'Requested integer {',yn,'} was not found'
-   stop
-endif
-return
-end subroutine get_restart_integer
-
-
 ! ********************************
 ! * SUBROUTINE GET_RESTART_ARRAY *
 ! ********************************
-subroutine get_restart_array(yn,pa,k1,k2,k3)
+subroutine get_restart_array(yn,pa,k1,k2)
 use rstmod
+implicit none
 
 character (len=*) :: yn
-real :: pa(k2,k3)
+integer :: k1,k2,j,m
+real(8) :: pa(k1,k2)
 
 do j = 1 , nrstnum
    if (trim(yn) == trim(yrstnam(j))) then
       call fileseek(yn,j)
-      read (nurstini) pa(1:k1,:)
+      read (nurstini) pa(:,:)
+      do m = 1 , min(k1,nrstdiag)
+         if (k1 .eq. 1 .and. k2 .eq. 1) then
+            write(nudiag,'(" ", a," = ",e15.9)')  &
+            trim(yn),pa(m,:)
+         elseif (k1 .ne. 1 .and. k2 .eq. 1) then
+            write(nudiag,'(" ",a, "(",i2,") = ", e15.9)')  &
+            trim(yn),m, pa(m,:)
+         else
+            write(nudiag,'(" ",a, "(",i2,",1) = ", e15.9)')  &
+            trim(yn),m, pa(m,:)
+         endif
+      enddo
       nlastrec = nlastrec + 1
       return
    endif
@@ -110,40 +100,148 @@ return
 end subroutine get_restart_array
 
 
-! ********************************** 
-! * SUBROUTINE PUT_RESTART_INTEGER *
-! ********************************** 
-subroutine put_restart_integer(yn,kv)
+! *********************************
+! * SUBROUTINE GET_RESTART_CARRAY *
+! *********************************
+subroutine get_restart_carray(yn,ca,k1,k2)
 use rstmod
+implicit none
 
-      character (len=*)  :: yn
-      character (len=16) :: yy
-      integer :: kv
 
-      yy = yn
-      write(nurstfin) yy
-      write(nurstfin) kv
+character (len=*) :: yn
+integer    :: k1,k2,j,m
+complex(8) :: ca(k1,k2)
+
+do j = 1 , nrstnum
+   if (trim(yn) == trim(yrstnam(j))) then
+      call fileseek(yn,j)
+      read (nurstini) ca(:,:)
+      do m = 1 , min(k1,nrstdiag)
+         if (k1 .eq. 1 .and. k2 .eq. 1) then
+            write(nudiag,'(" ",a," = ", e15.9," / ",e15.9)') &
+               trim(yn), real(ca(m,1)), aimag(ca(m,1))
+         elseif (k1 .ne. 1 .and. k2 .eq. 1) then
+            write(nudiag,'(" ",a, "(",i2,") = ", e15.9," / ",e15.9)') &
+               trim(yn),m, real(ca(m,1)), aimag(ca(m,1))
+         else
+            write(nudiag,'(" ",a, "(",i2,",1) = ", e15.9," / ",e15.9)') &
+               trim(yn),m, real(ca(m,1)), aimag(ca(m,1))
+         endif
+      enddo
+      nlastrec = nlastrec + 1
       return
-      end subroutine put_restart_integer
+   endif
+enddo
+if (nexcheck == 1) then
+   write(nudiag,*) '*** Error in get_restart_array ***'
+   write(nudiag,*) 'Requested array {',yn,'} was not found'
+   stop
+endif
+
+return
+end subroutine get_restart_carray
+
+
+! *********************************
+! * SUBROUTINE GET_RESTART_IARRAY *
+! *********************************
+subroutine get_restart_iarray(yn,ia,k1,k2)
+use rstmod
+implicit none
+
+
+character (len=*) :: yn
+integer :: k1,k2,j,m
+integer :: ia(k1,k2)
+
+do j = 1 , nrstnum
+
+   if (trim(yn) == trim(yrstnam(j))) then
+      call fileseek(yn,j)
+      read (nurstini) ia(:,:)
+      do m = 1 , min(k1,nrstdiag)
+         if (k1 .eq. 1 .and. k2 .eq. 1) then
+            write(nudiag,'(" ",a," = ", i16)') trim(yn), ia(:,:)
+         elseif (k1 .ne. 1 .and. k2 .eq. 1) then
+            write(nudiag,'(" ",a, "(",i2,") = ", i16)')  &
+               trim(yn),m, ia(m,:)
+         else
+            write(nudiag,'(" ",a, "(",i2,",1) = ", i16)')  &
+               trim(yn),m, ia(m,:)
+         endif
+      enddo
+      nlastrec = nlastrec + 1
+      return
+   endif
+enddo
+if (nexcheck == 1) then
+   write(nudiag,*) '*** Error in get_restart_array ***'
+   write(nudiag,*) 'Requested array {',yn,'} was not found'
+   stop
+endif
+
+return
+end subroutine get_restart_iarray
 
 
 ! ********************************
 ! * SUBROUTINE PUT_RESTART_ARRAY *
 ! ********************************
-subroutine put_restart_array(yn,pa,k1,k2,k3)
+subroutine put_restart_array(yn,pa,k1,k2)
 use rstmod
+implicit none
 
 character (len=*)  :: yn
 character (len=16) :: yy
-integer :: k1,k2,k3
-real :: pa(k2,k3)
+integer :: k1,k2
+real(8) :: pa(k1,k2)
 
 yy = yn
 write(nurstfin) yy
-write(nurstfin) pa(1:k1,1:k3)
+write(nurstfin) pa(1:k1,1:k2)
 
 return
 end subroutine put_restart_array
+
+
+! *********************************
+! * SUBROUTINE PUT_RESTART_CARRAY *
+! *********************************
+subroutine put_restart_carray(yn,ca,k1,k2)
+use rstmod
+implicit none
+
+character (len=*)  :: yn
+character (len=16) :: yy
+integer    :: k1,k2
+complex(8) :: ca(k1,k2)
+
+yy = yn
+write(nurstfin) yy
+write(nurstfin) ca(1:k1,1:k2)
+
+return
+end subroutine put_restart_carray
+
+
+! *********************************
+! * SUBROUTINE PUT_RESTART_IARRAY *
+! *********************************
+subroutine put_restart_iarray(yn,ia,k1,k2)
+use rstmod
+implicit none
+
+character (len=*)  :: yn
+character (len=16) :: yy
+integer :: k1,k2
+integer :: ia(k1,k2)
+
+yy = yn
+write(nurstfin) yy
+write(nurstfin) ia(1:k1,1:k2)
+
+return
+end subroutine put_restart_iarray
 
 
 ! ***********************
@@ -152,9 +250,12 @@ end subroutine put_restart_array
 
 subroutine fileseek(yn,k)
 use rstmod
+implicit none
 
 character (len=*)  :: yn
 character (len=16) :: yy
+integer :: iostat, k
+
 
 if (k <= nlastrec) then
    rewind nurstini
@@ -179,10 +280,13 @@ end
 ! * SUBROUTINE CHECK_EQUALITY *
 ! *****************************
 subroutine check_equality(yn,pa,pb,k1,k2)
+use rstmod
+implicit none
 
 character (len=*) :: yn
-real :: pa(k1,k2)
-real :: pb(k1,k2)
+integer :: k1,k2,j1,j2
+real(8) :: pa(k1,k2)
+real(8) :: pb(k1,k2)
 
 do j2 = 1 , k2
    do j1 = 1 , k1
@@ -203,6 +307,7 @@ end
 ! **********************
 subroutine varseek(yn,knum)
 use rstmod
+implicit none
 
 character (len=*)  :: yn
 character (len=16) :: ytmp
