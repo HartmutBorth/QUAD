@@ -41,7 +41,11 @@ module quadmod
 ! *****************
 character (256) :: quadversion = "July 2015, Version 0.0"
 
-integer :: nshutdown = 0      ! flag to stop program (not active)
+integer :: nshutdown = 0       ! flag to stop program (not active)
+logical :: lrsttest  = .false. ! flag set to 1 for restart test, 
+                               ! parameter nsteps is not written 
+                               ! to restart file (it is tested for
+                               ! the file RSTTEST
 
 ! ***************************
 ! * Physics and mathematics *
@@ -351,6 +355,12 @@ if (tstep .eq. 0) call read_ini
 call init_ltprop
 call init_rand
 call init_forc
+if (tstep .eq. 0) then
+   tstop = tstep + nsteps       ! initial state included
+else
+   tstop = tstep - 1 + nsteps   
+endif
+
 if (tstep .eq. 0) call init_tstepping
 
 return
@@ -379,6 +389,9 @@ open(nudiag,file=quad_diag)
 if (ntseri .ge. 0)  open(nutseri,file=quad_tseri)
 if (ncfl .ge. 0)    open(nucfl,file=quad_cfl)
 if (ngp .ge. 0)     open(nugp,file=quad_gp,form='unformatted')
+
+inquire(file="RSTTEST",exist=lrsttest)
+
 
 return
 end subroutine inq_open_files
@@ -412,6 +425,17 @@ write(nudiag, &
 write(nudiag, &
    '(" *************************************************",/)')
 
+
+if (lrsttest) then
+   write(nudiag, &
+    '(" *************************************************")')
+   write(nudiag, &
+    '(" * !!! Run QUAD in restart test mode !!!")')
+   write(nudiag, &
+    '(" *************************************************",/)')
+endif
+
+
 return
 end subroutine mk_diaghead
 
@@ -432,7 +456,7 @@ write(nudiag, &
 
 !--- namelist parameters
 
-call get_restart_iarray('nsteps',nsteps,1,1)
+if (.not. lrsttest) call get_restart_iarray('nsteps',nsteps,1,1)
 call get_restart_iarray('ngp',ngp,1,1)
 call get_restart_iarray('inigp',inigp,ninigp,1)
 call get_restart_iarray('inisp',inisp,ninisp,1)
@@ -471,7 +495,6 @@ call get_restart_iarray('seed',seed,nseedlen,1)
 
 !--- fluid state
 call get_restart_carray('cq',cq,nkx+1,nfy+1)
-call get_restart_carray('cjac0',cjac0,nkx+1,nfy+1)
 call get_restart_carray('cjac1',cjac1,nkx+1,nfy+1)
 call get_restart_carray('cjac2',cjac2,nkx+1,nfy+1)
 
@@ -491,7 +514,7 @@ namelist /quad_nl/ nsteps  ,ngp       ,inigp   ,inisp    ,tstp_mthd , &
                    lam     ,plam      ,rtlam   ,klam     ,diss_mthd , &
                    nforc   ,kfmin     ,kfmax   ,aforc    ,tforc     , &
                    myseed  ,ntseri    ,nstdout ,jac_mthd ,ndiag     , &
-                   jac_scl 
+                   jac_scl
 
 if (lnl) read(nunl,quad_nl) 
 
@@ -1017,8 +1040,6 @@ implicit none
 
 if (nshutdown > 0) return   ! if an error occured so far
 
-!--- determine final time step of run
-tstop = tstep + nsteps
 
 do while (tstep <= tstop)
    call q2gquv
@@ -1101,7 +1122,7 @@ implicit none
 
 
 !--- namelist parameters
-call put_restart_iarray('nsteps',nsteps,1,1)
+if (.not. lrsttest) call put_restart_iarray('nsteps',nsteps,1,1)
 call put_restart_iarray('ngp',ngp,1,1)
 call put_restart_iarray('inigp',inigp,ninigp,1)
 call put_restart_iarray('inisp',inisp,ninisp,1)
@@ -1143,7 +1164,6 @@ call put_restart_iarray('seed',seed,nseedlen,1)
 
 !--- fluid state
 call put_restart_carray('cq',cq,nkx+1,nfy+1)
-call put_restart_carray('cjac0',cjac0,nkx+1,nfy+1)
 call put_restart_carray('cjac1',cjac1,nkx+1,nfy+1)
 call put_restart_carray('cjac2',cjac2,nkx+1,nfy+1)
 

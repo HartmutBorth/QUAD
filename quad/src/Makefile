@@ -25,6 +25,7 @@ clean:
 
 cleanall:
 	rm -f quad.x *.o *.mod quad_gp quad_gp.nc quad_tseri quad_cfl quad_diag quad_rstini quad_rstfin
+	make cleanrsttest
 
 run:
 	time quad.x $(NGX)
@@ -40,13 +41,11 @@ all:
 	make run
 	make nc
 	make view
-allrst:
-	make cleanall
-	make
-	make run
-	make nc
-	cp quad_gp.nc quad_gp_01.nc
-	cp quad_rstfin quad_rstini
-	make run
-	make nc
-	cp quad_gp.nc quad_gp_02.nc
+rsttest:
+	cp ../../tools/quad_rst_test.csh .       
+	csh quad_rst_test.csh
+	rm -f quad_rst_test.csh
+cleanrsttest:
+	cp ../../tools/clean_quad_rst_test.csh .       
+	csh clean_quad_rst_test.csh
+	rm -f clean_quad_rst_test.csh

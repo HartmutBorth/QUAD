@@ -5,8 +5,8 @@ module rstmod
 use quadmod, only: nurstini,quad_rstini, nurstfin, nudiag
 
 integer, parameter :: nrstdim  = 200   ! Max number of records
-integer, parameter :: nrstdiag = 5     ! 1D restart arrays up 
-                                       ! to size nrstdiag will be  
+integer, parameter :: nrstdiag = 5     ! 1D restart arrays up
+                                       ! to size nrstdiag will be
                                        ! written to quad_diag
 integer            :: nexcheck =   1   ! Extended checks
 integer            :: nrstnum  =   0   ! Actual number of records
