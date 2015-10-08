@@ -3,10 +3,11 @@
  jac_scl   = 1.0
  dt        = 1.0d-3
  myseed    = 1,2,3,4,5,6,7,8
- inigp     = 138
- inisp     = 139 
+ ingp      = 138
+ insp      = 0
  nsteps = 20000
  ngp       = 250
+ nsp       = 250
  ncfl      = 500
  nforc     = 0
  kfmin     = 5

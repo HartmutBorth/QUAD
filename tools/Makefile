@@ -15,7 +15,7 @@ clean:
 	rm -f MakeIni.x *.o *.mod
 
 cleanall:
-	rm -f MakeIni.x *.o *.mod GP*.srv
+	rm -f MakeIni.x *.o *.mod G*.srv
 
 run:
 	MakeIni.x $(NGX)

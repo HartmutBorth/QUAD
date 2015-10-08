@@ -69,19 +69,21 @@ integer :: ios_nl = 1         ! 0 if <quad_namelist> is readable
 
 !--- i/o units
 integer, parameter :: nunl        = 10  ! namelist
-integer, parameter :: nuini       = 15  ! initial conditions
+integer, parameter :: nuin        = 15  ! initial conditions
 integer, parameter :: nutseri     = 20  ! time series
 integer, parameter :: nucfl       = 25  ! time series
-integer, parameter :: nugp        = 30  ! output fields
-integer, parameter :: nurstini    = 35  ! restart for reading initial state
-integer, parameter :: nurstfin    = 40  ! restart for writing final state
-integer, parameter :: nudiag      = 45  ! statistics of model run
+integer, parameter :: nugp        = 30  ! gridpoint output fields
+integer, parameter :: nusp        = 35  ! spectral output fields
+integer, parameter :: nurstini    = 40  ! restart for reading initial state
+integer, parameter :: nurstfin    = 45  ! restart for writing final state
+integer, parameter :: nudiag      = 50  ! statistics of model run
 
 !--- i/o file names
 character (256) :: quad_namelist  = "quad_namelist"
 character (256) :: quad_tseri     = "quad_tseri"
 character (256) :: quad_cfl       = "quad_cfl"
 character (256) :: quad_gp        = "quad_gp"
+character (256) :: quad_sp        = "quad_sp"
 character (256) :: quad_rstini    = "quad_rstini"
 character (256) :: quad_rstfin    = "quad_rstfin"
 character (256) :: quad_diag      = "quad_diag"
@@ -89,23 +91,46 @@ character (256) :: quad_diag      = "quad_diag"
 !--- header for output of service format
 integer :: ihead(8)
 
+
+!--- array with grid types
+integer, parameter      :: ngtp         = 2
+character(2), parameter :: gtp_ar(ngtp) = (/ "GP" , "SP" /)
+
 !--- codes of variables to be read at initialization
-integer, parameter :: ninigp = 5
-integer, parameter :: ninisp = 5
-integer :: inigp(ninigp) = &
+integer, parameter :: ningp  = 5
+integer, parameter :: ninsp  = 5
+integer :: ingp(ningp) = &
    (/ 138, &
        0 , &     
        0 , &     
        0 , &     
        0   &    
    /) 
-integer :: inisp(ninisp) = &
+integer :: insp(ninsp) = &
    (/  0 , &
        0 , &     
        0 , &     
        0 , &     
        0   &    
    /) 
+
+!--- codes of variables to be written to quad_gp or quad_sp 
+integer, parameter :: noutgp = 5
+integer, parameter :: noutsp = 5
+integer :: outgp(noutgp) = &
+   (/ 138, &
+       0 , &
+       0 , &
+       0 , &
+       0   &
+   /)
+integer :: outsp(noutsp) = &
+   (/  0  , &
+       0  , &
+       0  , &
+       0  , &
+       0    &
+   /)
 
 
 ! *******************************
@@ -269,8 +294,10 @@ integer :: nstdout   = 2500   ! time steps between messages to
 integer :: ndiag     = 500    ! time steps between test outputs into
                               ! out_diag (-1 no test outputs) 
 
-integer :: ngp       = 100     ! time steps between data output 
-                               ! (-1 = no output)
+integer :: ngp       = 100     ! time steps between output of grid point
+                               ! fields (-1 = no output)
+integer :: nsp       = 100     ! time steps between output of spectral
+                               ! fields (-1 = no output)
 integer :: ncfl      = 10      ! time steps between cfl-check 
                                ! (-1 no cfl check)
 
@@ -290,18 +317,24 @@ real(8), allocatable :: guq(:,:) ! u*vorticity
 real(8), allocatable :: gvq(:,:) ! v*vorticity
 
 
-!--- variables in Fourier/spectral (SP) space
+!--- variables in Fourierspace, real representation (F)
 real(8), allocatable :: fpsi(:,:) ! stream function
 real(8), allocatable :: fu(:,:)   ! velocity x-direction
 real(8), allocatable :: fv(:,:)   ! velocity y-direction
 
-real(8), allocatable :: fuq(:,:) ! u*vorticity
-real(8), allocatable :: fvq(:,:) ! v*vorticity
+real(8), allocatable :: fuq(:,:)  ! u*vorticity
+real(8), allocatable :: fvq(:,:)  ! v*vorticity
 
+real(8), allocatable :: ftmp(:,:) ! temporary utility field
+
+
+!--- variables in Fourierspace, complex representation (
 complex(8), allocatable :: cq(:,:)     ! vorticity
 complex(8), allocatable :: cjac0(:,:)  ! Jacobian at time 0
 complex(8), allocatable :: cjac1(:,:)  ! Jacobian at time -1
 complex(8), allocatable :: cjac2(:,:)  ! Jaconbian at time -2
+
+
 
 !--- operators in Fourier Space
 integer   , allocatable :: ki(:),kj(:)  
@@ -334,6 +367,7 @@ end program quad
 ! #      Subroutines & Functions      #
 ! #####################################
 
+
 ! *********************
 ! * subroutine prolog *
 ! *********************
@@ -348,10 +382,12 @@ call read_resol
 call init_pars
 call alloc_vars
 call init_ops
-if (lrst) call check_rst
-if (lrst) call read_rst
-if (lnl)  call read_nl
-if (tstep .eq. 0) call read_ini
+if (lrst) then
+   call check_rst
+   call read_rst
+endif
+if (lnl) call read_nl
+if (tstep .eq. 0) call read_input
 call init_ltprop
 call init_rand
 call init_forc
@@ -365,6 +401,7 @@ if (tstep .eq. 0) call init_tstepping
 
 return
 end subroutine prolog
+
 
 ! *****************************
 ! * SUBROUTINE INQ_OPEN_FILES *
@@ -389,6 +426,7 @@ open(nudiag,file=quad_diag)
 if (ntseri .ge. 0)  open(nutseri,file=quad_tseri)
 if (ncfl .ge. 0)    open(nucfl,file=quad_cfl)
 if (ngp .ge. 0)     open(nugp,file=quad_gp,form='unformatted')
+if (nsp .ge. 0)     open(nusp,file=quad_sp,form='unformatted')
 
 inquire(file="RSTTEST",exist=lrsttest)
 
@@ -458,8 +496,11 @@ write(nudiag, &
 
 if (.not. lrsttest) call get_restart_iarray('nsteps',nsteps,1,1)
 call get_restart_iarray('ngp',ngp,1,1)
-call get_restart_iarray('inigp',inigp,ninigp,1)
-call get_restart_iarray('inisp',inisp,ninisp,1)
+call get_restart_iarray('nsp',nsp,1,1)
+call get_restart_iarray('ingp',ingp,ningp,1)
+call get_restart_iarray('insp',insp,ninsp,1)
+call get_restart_iarray('outgp',outgp,noutgp,1)
+call get_restart_iarray('outsp',outsp,noutsp,1)
 call get_restart_iarray('tstp_mthd',tstp_mthd,1,1)
 call get_restart_iarray('ncfl',ncfl,1,1)
 call get_restart_array ('dt',dt,1,1)
@@ -507,14 +548,16 @@ end subroutine read_rst
 ! **********************
 subroutine read_nl
 use quadmod
+implicit none
 
-namelist /quad_nl/ nsteps  ,ngp       ,inigp   ,inisp    ,tstp_mthd , &
-                   ncfl    ,dt        ,alpha   ,beta     ,lx        , &
-                   ly      ,sig       ,psig    ,rtsig    ,ksig      , &   
-                   lam     ,plam      ,rtlam   ,klam     ,diss_mthd , &
-                   nforc   ,kfmin     ,kfmax   ,aforc    ,tforc     , &
-                   myseed  ,ntseri    ,nstdout ,jac_mthd ,ndiag     , &
-                   jac_scl
+
+namelist /quad_nl/ nsteps    ,ngp       ,ingp    ,insp     ,            &
+                   ncfl      ,dt        ,alpha   ,beta     ,lx        , &
+                   ly        ,sig       ,psig    ,rtsig    ,ksig      , &
+                   lam       ,plam      ,rtlam   ,klam     ,diss_mthd , &
+                   nforc     ,kfmin     ,kfmax   ,aforc    ,tforc     , &
+                   myseed    ,ntseri    ,nstdout ,jac_mthd ,ndiag     , &
+                   jac_scl   ,nsp       ,outgp   ,outsp    ,tstp_mthd
 
 if (lnl) read(nunl,quad_nl) 
 
@@ -620,108 +663,103 @@ allocate(gvq(1:ngx,1:ngy))  ; gvq(:,:)  = 0.0  ! v*vorticity
 
 
 !--- spetral space 
-allocate(fu(0:nfx,0:nfy))   ; fu(:,:)    = 0.0 ! u or u*zeta
-allocate(fv(0:nfx,0:nfy))   ; fv(:,:)    = 0.0 ! v or v*zeta
-allocate(fuq(0:nfx,0:nfy))  ; fuq(:,:)  = 0.0 ! u or u*zeta
-allocate(fvq(0:nfx,0:nfy))  ; fvq(:,:)  = 0.0 ! v or v*zeta
-
+allocate(fu(0:nfx,0:nfy))   ; fu(:,:)   = 0.0 ! u 
+allocate(fv(0:nfx,0:nfy))   ; fv(:,:)   = 0.0 ! v 
+allocate(fuq(0:nfx,0:nfy))  ; fuq(:,:)  = 0.0 ! u*q
+allocate(fvq(0:nfx,0:nfy))  ; fvq(:,:)  = 0.0 ! v*q
+allocate(ftmp(0:nfx,0:nfy)) ; ftmp(:,:) = 0.0 ! temporary field
 
 allocate(k2n(0:nkx,0:nfy))   ; k2n(:,:)   = 0.0 ! Laplacian
 allocate(rk2an(0:nkx,0:nfy)) ; rk2an(:,:) = 0.0 ! inverse of modified Laplacian
 allocate(kirk2an(0:nkx,0:nfy)) ;kirk2an(:,:) = 0.0 ! q --> v
 allocate(kjrk2an(0:nkx,0:nfy)) ;kjrk2an(:,:) = 0.0 ! q --> u
 
-allocate(cli(0:nkx,0:nfy)) ; cli(:,:)  = (0.0,0.0) ! linear time propagator 
-allocate(cq(0:nkx,0:nfy)) ; cq(:,:)  = (0.0,0.0) ! vorticity
+allocate(cli(0:nkx,0:nfy))  ; cli(:,:)   = (0.0,0.0) ! linear time propagator 
+allocate(cq(0:nkx,0:nfy))   ; cq(:,:)    = (0.0,0.0) ! vorticity
 allocate(cjac0(0:nkx,0:nfy)); cjac0(:,:) = (0.0,0.0) ! Jacobian at time level  0
 allocate(cjac1(0:nkx,0:nfy)); cjac1(:,:) = (0.0,0.0) ! Jacobian at time level -1
 allocate(cjac2(0:nkx,0:nfy)); cjac2(:,:) = (0.0,0.0) ! Jacobian at time level -2
-
 
 return
 end subroutine alloc_vars
 
 
-! ***********************
-! * SUBROUTINE READ_INI *
-! ***********************
-subroutine read_ini
+! *************************
+! * SUBROUTINE READ_INPUT *
+! *************************
+subroutine read_input
 use quadmod
+implicit none
 
 logical         :: lexist
-integer         :: kcode
-
+integer         :: kcode,jj,kk,kkmax
 character(2)    :: gtp
 character(256)  :: fname
 
-!--- check if GP<ngx>_var<kcode>.srv is present
-gtp = "GP"
-do kk = 1,ninigp
-   kcode = inigp(kk)
-   if (kcode .gt. 0) then
-      call checkvar(ngx,kcode,gtp,lexist)
-      if (lexist) then
-         select case (kcode)
-         case (138)
-            call readvar(ngx,kcode,gtp,gq)
-            call grid_to_fourier(gq,cq,nfx,nfy,ngx,ngy)
-            cq(0,0) = (0.0,0.0)
-         end select
-      else
-         call mk_fname(ngx,kcode,gtp,fname)
-         write(nudiag, &
-         '(" *************************************************")')
-         write(nudiag, &
-         '(" *   File ", a ," not found, use default")') trim(fname)
-         write(nudiag, &
-         '(" *************************************************",/)')
+do jj = 1,ngtp
+   gtp = gtp_ar(jj)
+   select case (gtp)
+   case ("GP")
+      kkmax = ningp
+   case ("SP")
+      kkmax = ninsp
+   end select
+   do kk = 1,kkmax
+      select case (gtp)
+      case ("GP")
+         kcode = ingp(kk)
+      case ("SP")
+         kcode = insp(kk)
+      end select
+      if (kcode .gt. 0) then
+         call checkvar(kcode,gtp,lexist)
+         if (lexist) then
+            select case (kcode)
+            case (138)
+               select case (gtp)
+               case ("GP")
+                  call read_gp(kcode,gtp,gq)
+                  call grid_to_fourier(gq,cq,nfx,nfy,ngx,ngy)
+               case ("SP")
+                  call read_sp(kcode,gtp,ftmp)
+                  call f2c(ftmp,cq)
+               end select
+               cq(0,0) = (0.0,0.0)
+            end select
+         else
+            call mk_fname(kcode,gtp,fname)
+            write(nudiag, &
+            '(" *************************************************")')
+            write(nudiag, &
+            '(" *   File ", a ," not found, use default")') trim(fname)
+            write(nudiag, &
+            '(" *************************************************",/)')
+         endif
       endif
-   endif
-enddo
-
-!--- check if file SP<ngx>_var<kcode>.srv is present
-gtp = "SP"
-do kk = 1,ninisp
-   kcode = inisp(kk)
-   if (kcode .gt. 0) then
-      call checkvar(ngx,kcode,gtp,lexist)
-      if (lexist) then
-         select case (kcode)
-         case (138)
-            call readvar(ngx,kcode,gtp,gq)
-         end select
-      else
-         call mk_fname(ngx,kcode,gtp,fname)
-         write(nudiag, &
-         '(" *************************************************")')
-         write(nudiag, &
-         '(" *   File ", a ," not found, use default")') trim(fname)
-         write(nudiag, &
-         '(" *************************************************",/)')
-      endif
-   endif
+   enddo
 enddo
 
 return
-end subroutine read_ini
+end subroutine read_input
 
 
 ! ***********************
 ! * SUBROUTINE MK_FNAME *
 ! ***********************
-subroutine mk_fname(kgx,kcode,gtp,fname)
+subroutine mk_fname(kcode,gtp,fname)
 use quadmod
+implicit none
 
 character(2)   :: gtp
 character(256) :: fname
-integer :: kcode,kgx
+integer :: kcode
 
-if (kgx < 100) then
-  write(fname,'(a2,i2.2,"_var",i4.4,".srv")') gtp,kgx,kcode
-elseif (kgx < 1000) then
-  write(fname,'(a2,i3.3,"_var",i4.4,".srv")') gtp,kgx,kcode
+if (ngx < 100) then
+  write(fname,'(a2,i2.2,"_var",i4.4,".srv")') gtp,ngx,kcode
+elseif (ngx < 1000) then
+  write(fname,'(a2,i3.3,"_var",i4.4,".srv")') gtp,ngx,kcode
 else
-  write(fname,'(a2,i4.4,"_var",i4.4,".srv")') gtp,kgx,kcode
+  write(fname,'(a2,i4.4,"_var",i4.4,".srv")') gtp,ngx,kcode
 endif
 
 fname = trim(fname)
@@ -733,37 +771,36 @@ end subroutine mk_fname
 ! ***********************
 ! * SUBROUTINE CHECKVAR *
 ! ***********************
-subroutine checkvar(kgx,kcode,gtp,lexist)
+subroutine checkvar(kcode,gtp,lexist)
 use quadmod
 
 logical :: lexist
 character(2)   :: gtp
 character(256) :: fname
-integer :: kgx,kcode
+integer :: kcode
 
-call mk_fname(kgx,kcode,gtp,fname)
-inquire(file=fname,exist=lexist)
+call mk_fname(kcode,gtp,fname)
+inquire(file=trim(fname),exist=lexist)
 
 return
 end subroutine checkvar
 
 
 ! **********************
-! * SUBROUTINE READVAR *
+! * SUBROUTINE READ_GP *
 ! **********************
-subroutine readvar(kgx,kcode,gtp,vargp)
+subroutine read_gp(kcode,gtp,gpvar)
 use quadmod
+implicit none
 
 character(2)   :: gtp
 character(256) :: fname
-integer        :: kcode,kgx
-real(8)        :: vargp(1:ngx,1:ngy)
-real(8)        :: varfp(0:nfx,0:nfy)
-complex(8)     :: varc(0:nkx,0:nfy)
+integer        :: kcode
+real(8)        :: gpvar(1:ngx,1:ngy)
 
-call mk_fname(kgx,kcode,gtp,fname)
+call mk_fname(kcode,gtp,fname)
 
-open(nuini,file=fname,form='unformatted')
+open(nuin,file=fname,form='unformatted')
 
 write(nudiag, &
 '(" *************************************************")')
@@ -772,12 +809,88 @@ write(nudiag,'(" * Reading var",i4.4 " from file " a)') &
 write(nudiag, &
 '(" *************************************************",/)')
 
-read (nuini) ihead
-read (nuini) vargp(:,:)
-close(nuini)
+read (nuin) ihead
+read (nuin) gpvar(:,:)
+close(nuin)
 
 return
-end subroutine readvar
+end subroutine read_gp
+
+
+! **********************
+! * SUBROUTINE READ_SP *
+! **********************
+subroutine read_sp(kcode,gtp,spvar)
+use quadmod
+implicit none
+
+character(2)   :: gtp
+character(256) :: fname
+integer        :: kcode
+real(8)        :: spvar(0:nfx,0:nfy)
+
+call mk_fname(kcode,gtp,fname)
+
+open(nuin,file=fname,form='unformatted')
+
+write(nudiag, &
+'(" *************************************************")')
+write(nudiag,'(" * Reading var",i4.4 " from file " a)') &
+      kcode,trim(fname)
+write(nudiag, &
+'(" *************************************************",/)')
+
+read (nuin) ihead
+read (nuin) spvar(:,:)
+close(nuin)
+
+return
+end subroutine read_sp
+
+
+! ******************
+! * SUBROUTINE F2C *
+! *******************
+subroutine f2c(fvar,cvar)
+use quadmod
+implicit none
+
+integer     :: i,j
+real(8)     :: fvar(0:nfx,0:nfy)
+complex(8)  :: cvar(0:nkx,0:nfy)
+
+do j = 0, nfy
+   do i = 0, nkx
+      cvar(i,j) = cmplx(fvar(i+i,j),fvar(i+i+1,j))
+   enddo
+enddo
+
+return
+end subroutine f2c
+
+
+! ******************
+! * SUBROUTINE C2F *
+! ******************
+subroutine c2f(cvar,fvar)
+use quadmod
+implicit none
+
+integer     :: i,j
+real(8)     :: fvar(0:nfx,0:nfy)
+complex(8)  :: cvar(0:nkx,0:nfy)
+
+
+
+do j = 0, nfy
+   do i = 0, nkx
+      fvar(i+i  ,j) = real (cvar(i,j))
+      fvar(i+i+1,j) = aimag(cvar(i,j))
+   enddo
+enddo
+
+return
+end subroutine c2f
 
 
 ! **************************
@@ -937,8 +1050,31 @@ subroutine write_output
 use quadmod
 implicit none
 
-if(tstep.ge.0.and.mod(tstep,ngp).eq.0)    call write_gp(nugp,gq,138,0)
+integer :: kk,kcode
+
+if(tstep.ge.0.and.mod(tstep,ngp).eq.0)  then
+   do kk = 1, noutgp
+      kcode = outgp(kk)
+      select case (kcode)
+      case (138)
+         call write_gp(nugp,gq,138,0)
+      end select
+   enddo 
+endif
+
+if(tstep.ge.0.and.mod(tstep,nsp).eq.0)  then
+   do kk = 1, noutsp
+      kcode = outsp(kk)
+      select case (kcode)
+      case (138)
+         call c2f(cq,ftmp)
+         call write_sp(nusp,ftmp,138,0)
+      end select
+   enddo
+endif
+
 if(tstep.ge.0.and.mod(tstep,ntseri).eq.0) call write_tseri
+
 if(tstep.ge.0.and.mod(tstep,ncfl).eq.0)   call write_cfl
 
 return
@@ -948,13 +1084,13 @@ end subroutine write_output
 ! ************
 ! * WRITE_GP *
 ! ************
-subroutine write_gp(ku,gpfld,kcode,klev)
+subroutine write_gp(ku,gpvar,kcode,klev)
 use quadmod
 implicit none
 
 integer :: ku,kcode,klev
 integer :: yy,mo,dd,hh,mm,ii
-real(8) :: gpfld(ngx,ngy)
+real(8) :: gpvar(ngx,ngy)
 
 ! Build a header for service format
 
@@ -967,20 +1103,56 @@ ii = ii / 30
 mo = mod(ii,12) + 1
 yy = ii / 12
 
-ihead(1) =    kcode 
-ihead(2) =    klev
+ihead(1) = kcode
+ihead(2) = klev
 ihead(3) = dd + 100 * mo + 10000 * yy
 ihead(4) = mm + 100 * hh
-ihead(5) =    ngx ! 1st. dim
-ihead(6) =    ngy ! 2nd. dim
-ihead(7) =      0
-ihead(8) =      0
+ihead(5) = ngx
+ihead(6) = ngy
+ihead(7) = 0
+ihead(8) = 0
 
 write (ku) ihead
-write (ku) gpfld(:,:)
+write (ku) gpvar(:,:)
 
 return
 end subroutine write_gp
+
+
+! ************
+! * WRITE_SP *
+! ************
+subroutine write_sp(ku,spvar,kcode,klev)
+use quadmod
+implicit none
+
+integer :: ku,kcode,klev
+integer :: yy,mo,dd,hh,mm,ii
+real(8) :: spvar(0:nfx,0:nfy)
+
+mm = mod(tstep,60)
+ii = tstep / 60
+hh = mod(ii,24)
+ii = ii / 24
+dd = mod(ii,30) + 1
+ii = ii / 30
+mo = mod(ii,12) + 1
+yy = ii / 12
+
+ihead(1) = kcode
+ihead(2) = klev
+ihead(3) = dd + 100 * mo + 10000 * yy
+ihead(4) = mm + 100 * hh
+ihead(5) = nfx+1
+ihead(6) = nfy+1
+ihead(7) = 0
+ihead(8) = 0
+
+write (ku) ihead
+write (ku) spvar(:,:)
+
+return
+end subroutine write_sp
 
 
 ! *****************************
@@ -1124,8 +1296,11 @@ implicit none
 !--- namelist parameters
 if (.not. lrsttest) call put_restart_iarray('nsteps',nsteps,1,1)
 call put_restart_iarray('ngp',ngp,1,1)
-call put_restart_iarray('inigp',inigp,ninigp,1)
-call put_restart_iarray('inisp',inisp,ninisp,1)
+call put_restart_iarray('nsp',nsp,1,1)
+call put_restart_iarray('ingp',ingp,ningp,1)
+call put_restart_iarray('insp',insp,ninsp,1)
+call put_restart_iarray('outgp',outgp,noutgp,1)
+call put_restart_iarray('outsp',outsp,noutsp,1)
 call put_restart_iarray('tstp_mthd',tstp_mthd,1,1)
 call put_restart_iarray('ncfl',ncfl,1,1)
 call put_restart_array ('dt',dt,1,1)
@@ -1184,6 +1359,7 @@ close(nudiag)
 if (ntseri .ge. 0)   close(nutseri)
 if (ncfl .ge. 0)     close(nucfl)
 if (ngp .ge. 0)      close (nugp)
+if (nsp .ge. 0)      close (nusp)
 
 return
 end subroutine close_files

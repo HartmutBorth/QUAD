@@ -24,7 +24,7 @@ clean:
 	rm -f quad.x *.o *.mod
 
 cleanall:
-	rm -f quad.x *.o *.mod quad_gp quad_gp.nc quad_tseri quad_cfl quad_diag quad_rstini quad_rstfin
+	rm -f quad.x *.o *.mod quad_gp quad_gp.nc quad_sp quad_sp.nc quad_tseri quad_cfl quad_diag quad_rstini quad_rstfin
 	make cleanrsttest
 
 run:
