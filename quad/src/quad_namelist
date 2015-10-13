@@ -4,8 +4,9 @@
  dt        = 1.0d-3
  myseed    = 1,2,3,4,5,6,7,8
  ingp      = 138
- insp      = 0
- nsteps = 20000
+ insp      = 0 
+ outsp     = 138
+ nsteps    = 50000
  ngp       = 250
  nsp       = 250
  ncfl      = 500

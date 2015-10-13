@@ -48,7 +48,7 @@ do jy = 1 , ny
 !               + 0.1 * sin((jy-1) * dx)
 
 !     z(jx,jy) = 0.0d0 
-
+!
 !     z(jx,jy) =  cos((jx-1) * dx +(jy-1) * dx)
 !     z(jx,jy) =  1.0 * cos((jx-1)*dx)   +  3.0 * cos((jx-1)*dx*2.0) &
 !               + 10.0 * sin((jy-1) * dy) + 20.0 * sin((jy-1) * dy * 2.0)
@@ -66,14 +66,14 @@ do jy = 1 , ny
 
 
 
-     z(jx,jy) =  0.0d0
-     if (jy > rr*j1-(rr-1) .and. jy < rr*j2-(rr-1)) then
-        z(jx,jy) = -amp 
-     endif
-     if (jy > rr*j3-(rr-1) .and. jy < rr*j4-(rr-1)) then
-        z(jx,jy) =  amp
-     endif
-     z(jx,jy) = z(jx,jy)*(1 + 0.1*sin((jx-1)*dx))
+      z(jx,jy) =  0.0d0
+      if (jy > rr*j1-(rr-1) .and. jy < rr*j2-(rr-1)) then
+         z(jx,jy) = -amp 
+      endif
+      if (jy > rr*j3-(rr-1) .and. jy < rr*j4-(rr-1)) then
+         z(jx,jy) =  amp
+      endif
+      z(jx,jy) = z(jx,jy)*(1 + 0.1*sin((jx-1)*dx))
 
 
    enddo

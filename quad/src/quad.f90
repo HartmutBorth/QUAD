@@ -1541,8 +1541,8 @@ kj2    = kj*kj
 
 do j = 0, nfy
    do i = 0, nkx
-      k2n(i,j)   = (ki2(i)+kj2(j))
-      rk2an(i,j) = 1.0d0/(k2n(i,j)+alpha)
+      k2n(i,j)     = (ki2(i)+kj2(j))
+      rk2an(i,j)   = 1.0d0/(k2n(i,j)+alpha)
       kirk2an(i,j) = ki(i)*rk2an(i,j)
       kjrk2an(i,j) = kj(j)*rk2an(i,j)
    enddo
