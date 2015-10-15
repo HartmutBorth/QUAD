@@ -116,7 +116,7 @@ where $\hat{g}(k_{x},k_{y},t)$ are the Fourier coefficients of
 $g(x,y,t)$ which live on the space of wave numbers $(k_{x},k_{y})$.
 Since $g(x,y,t)$ are real fields, the Fourier modes $\hat{g}(k_{x},k_{y},t)$
 have the symmetry property that
-\begin{equation}
+\begin{equation} \label{eq_symfourier}
   \hat{g}(-k_{x},-k_{y},t)  = \hat{g}^{\ast}(k_{x},k_{y},t),
 \end{equation}
 where $g^{\ast}$ is the complex conjugate of $g$. The Fourier
@@ -505,8 +505,6 @@ write
 \end{equation}
 
 Taking $N=8$ as example.
- 
-
 
 
 
@@ -636,3 +634,89 @@ Mind that $p_{\lambda} \le 0$.
 
 \section{Time-stepping schemes}
 \label{ssec_Tschemes}
+
+
+\section{The grid representation in QUAD}
+\label{ssec_Grids}
+In physical space all fields $g(x,y)$ are real and are represented on a regular 
+grid. Figure \ref{fig_physgrid} shows the grid for for a horizontal 
+resolugion of $ngx = ngy = 16$. Grid point read in or written out by QUAD
+are given in this format.
+\begin{figure} \label{fig_physgrid}
+   \includegraphics[height=9cm]{figures/phys_grid.pdf}
+   \caption{In physical space functions $g(x,y)$ are represented on a
+            regular grid with $ngx$ grid points in $x$-direction and 
+            $ngy$ grid points in $y$-direction. At present in QUAD only
+            the default $ngx = ngy$ is implemented.}
+\end{figure}
+In spectral space we have complex fields which in QUAD are either 
+represented as complex $c(k_{x},k_{y})$ or as real $f(k_{x},k_{y})$ 
+fields. 
+\begin{figure} \label{fig_ctorspecgrid}
+   \includegraphics[height=11cm]{figures/cmplx_real_spec_grid.pdf}
+   \caption{Functions in spectral space are represented either as
+            complex fields $c$ or as real fields $f$ containing 
+            in the first spectral coordinate $k_{x}$ the real and 
+            imaginary parts of $c$ in an alternating series.}
+\end{figure}
+Plate (a) in figure \ref{fig_ctorspecgrid} shows the wave number
+grid for the internal complex representation $c(k_{x},k_{y})$ 
+of spectral fields. Due to the symmetry propreties 
+\ref{eq_symfourier} it is sufficient to represent the fields only 
+on half of the space wave number space, i.e.\ for the wave numbers 
+\begin{equation} \label{eq_ncentwgrid}
+   (k_{x},\ k_{y}) \in  
+   \{\ k_{x} \in [\ 0,1,\ \dots \ nkx \ ] \ \ \mbox{and} \ \ 
+   k_{y} \in [\ 0, \ \dots \ ,nky,-nky, \ \dots \ , -1 \ ] \}.
+\end{equation}
+As described above we use the $2/3$-truncation, so that the bounds 
+$nkx$ and $nky$ are given by  
+\begin{equation} \label{eq_nkxnky}
+   nkx = ngx/3 \ \ \mbox{and} \ \ nky = ngy/3,
+\end{equation}
+where non-integer part of the division is omitted. In our example from 
+above $nkx = nky = 5$. As one can see the wave-numbers 
+in $y$-direction are not centered around zero. Plate (b) of 
+figure \ref{fig_ctorspecgrid} shows the internal real representation 
+$f(k_{x},k_{y})$ of spectral fields. In $y$-direction the spectral 
+grid remains the same as in the case of the complex representation. 
+In $x$-direction the number of coordinate points is doubled, even 
+coordinates starting from 
+$0$ hold the real part $\mathcal{R}(c(k_{x},k_{y}))$ and       
+the odd coordinates starting from 1 hold the imaginary part 
+$\mathcal{I}(c(k_{x},k_{y}))$ of the complex fields $c(k_{x},k_{y})$. 
+This is the format QUAD reads in or writes out spectral fields.
+While prescribing complex fields $c(k_{x},k_{y})$ in spectral space
+to QUAD it is important to keep in mind that on the $k_{y}$-axis 
+($k_{x} = 0$) values are not completely arbitrary, otherwise unphysical
+complex fields in phyiscal space are created. First $c(0,0)$ has
+to be zero, it represents the average of the field in physical space.
+In the case of vorticity $cq$ we get $cq(0,0) = 0$. For the remaining
+values $(0,k_{y})$ the symmetry properties \ref{eq_symfourier} have
+to be satisfied, i.e.\ on the $k_{y}$-axis spectral fields must
+satisfy the condition $c(0,k_{y}) = c^{*}(0,-k_{y})$.
+\begin{figure} \label{fig_cspecgrid}
+   \includegraphics[height=11cm]{figures/cmplx_cent_grid.pdf}
+   \caption{Internally spectral fields are given for the non-centered
+            wave numbers given by equation (\ref{eq_noncentwgrid}), 
+            for the visualization in the GUI the amplitudes and phases 
+            of the complex spectral fields are represented on thee centered
+            wave-number grid given by equation (\ref{eq_centwgrid})}
+\end{figure}
+In the Graphical User Interface (GUI) spectral fields are visualized on
+a centerd wave-number grid
+\begin{equation} \label{eq_centwgrid}
+   (k_{x},\ k_{y}) \in  
+   \{\ k_{x} \in [\ -nkx, \ \dots \ ,nkx \ ] 
+    \ \ \mbox{and} \ \ 
+       k_{y} \in [\ -nky, \ \dots \ ,nky \ ] \ \}.
+\end{equation}
+Visualized are the amplitudes $amp$ and phases $pha$ of the 
+complex fields
+\begin{equation} \label{eq_amppha}
+   amp(c) = \sqrt{\mathcal{R}^{2}(c) + \mathcal{I}^{2}(c)}
+   \ \ \mbox{and} \ \ 
+   pha(c) = \tan^{-1}(\frac{\mathcal{I}(c)}{\mathcal{R}(c)}).
+\end{equation}
+
+

@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2015.7.15)  29 SEP 2015 17:41
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2015.7.15)  15 OCT 2015 15:48
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -232,15 +232,15 @@ e
 * (1in=72.27pt=25.4mm, 1cm=28.453pt)
 
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <14.4> on input line 52.
+(Font)              <14.4> on input line 50.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <7> on input line 52.
-LaTeX Font Info:    Try loading font information for U+lasy on input line 52.
+(Font)              <7> on input line 50.
+LaTeX Font Info:    Try loading font information for U+lasy on input line 50.
 (/usr/share/texlive/texmf-dist/tex/latex/base/ulasy.fd
 File: ulasy.fd 1998/08/17 v2.2e LaTeX symbol font definitions
 )
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <5> on input line 52.
+(Font)              <5> on input line 50.
  [1
 
 
@@ -283,69 +283,103 @@ Overfull \hbox (22.24377pt too wide) in paragraph at lines 194--198
  []
 
 [16] [17]
-Overfull \hbox (0.47232pt too wide) in paragraph at lines 524--530
+Overfull \hbox (0.47232pt too wide) in paragraph at lines 522--528
 \OT1/cmr/m/n/12 and the cor-re-spond-ing ve-loc-ity fields $[](\OML/cmm/m/it/12
  k[]; k[]; t\OT1/cmr/m/n/12 )$ and $[](\OML/cmm/m/it/12 k[]; k[]; t\OT1/cmr/m/n
 /12 )$ once the vor-tic-ity field $[](\OML/cmm/m/it/12 k[]; k[]; t\OT1/cmr/m/n/
 12 )$
  []
 
-[18]) (./chap_testperform.tex [19] [20]
+[18] <figures/phys_grid.pdf, id=73, 796.9775pt x 597.23125pt>
+File: figures/phys_grid.pdf Graphic file (type pdf)
+
+<use figures/phys_grid.pdf>
+Package pdftex.def Info: figures/phys_grid.pdf used on input line 646.
+(pdftex.def)             Requested size: 341.72076pt x 256.0748pt.
+
+<figures/cmplx_real_spec_grid.pdf, id=74, 796.9775pt x 597.23125pt>
+File: figures/cmplx_real_spec_grid.pdf Graphic file (type pdf)
+
+<use figures/cmplx_real_spec_grid.pdf>
+Package pdftex.def Info: figures/cmplx_real_spec_grid.pdf used on input line 65
+6.
+(pdftex.def)             Requested size: 417.6533pt x 312.9803pt.
+ [19]
+<figures/cmplx_cent_grid.pdf, id=79, 796.9775pt x 597.23125pt>
+File: figures/cmplx_cent_grid.pdf Graphic file (type pdf)
+
+<use figures/cmplx_cent_grid.pdf>
+Package pdftex.def Info: figures/cmplx_cent_grid.pdf used on input line 699.
+(pdftex.def)             Requested size: 417.6533pt x 312.9803pt.
+
+
+LaTeX Warning: Reference `eq_noncentwgrid' on page 20 undefined on input line 7
+04.
+
+
+LaTeX Warning: Reference `eq_noncentwgrid' on page 20 undefined on input line 7
+04.
+
+[20 <./figures/phys_grid.pdf>] [21 <./figures/cmplx_real_spec_grid.pdf>])
+(./chap_testperform.tex [22 <./figures/cmplx_cent_grid.pdf>]
 Chapter 4.
-) [21
+) [23
 
-] [22
+] [24
 
-] [23] [24] (./chap_impmod.tex
+] [25] [26] (./chap_impmod.tex
 Chapter 5.
-) (./chap_runmod.tex [25
+) (./chap_runmod.tex [27
 
-] [26
+] [28
 
 ]
 Chapter 6.
-) (./chap_modoutput.tex [27] [28
+) (./chap_modoutput.tex [29] [30
 
 ]
 Chapter 7.
-) (./chap_modifymod.tex [29] [30
+) (./chap_modifymod.tex [31] [32
 
 ]
 Chapter 8.
-) [31] [32
+) [33] [34
 
-] [33] [34] (./app_namelists.tex
+] [35] [36] (./app_namelists.tex
 Appendix A.
 
 Underfull \hbox (badness 10000) in paragraph at lines 3--4
 
  []
 
-) (./app_modulsvariables.tex [35
+) (./app_modulsvariables.tex [37
 
-] [36
+] [38
 
 ]
 Appendix B.
-) (./app_codestruct.tex [37] [38
+) (./app_codestruct.tex [39] [40
 
 ]
 Appendix C.
-) (./ug_quad.bbl [39] [40
+) (./ug_quad.bbl [41] [42
 
-]) [41] (./ug_quad.aux)
+]) [43] (./ug_quad.aux)
+
+LaTeX Warning: There were undefined references.
+
 
 LaTeX Warning: There were multiply-defined labels.
 
  ) 
 Here is how much of TeX's memory you used:
- 2640 strings out of 493304
- 37148 string characters out of 6139871
- 114610 words of memory out of 5000000
- 6028 multiletter control sequences out of 15000+600000
+ 2666 strings out of 493304
+ 37731 string characters out of 6139871
+ 114713 words of memory out of 5000000
+ 6050 multiletter control sequences out of 15000+600000
  11177 words of font info for 43 fonts, out of 8000000 for 9000
  957 hyphenation exceptions out of 8191
- 38i,8n,32p,234b,256s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 38i,8n,32p,548b,256s stack positions out of 5000i,500n,10000p,200000b,80000s
 </usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></us
 r/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/shar
 e/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/share/texl
@@ -359,10 +393,10 @@ m/cmr8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsl12
 .pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb><
 /usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/sh
 are/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb>
-Output written on ug_quad.pdf (41 pages, 212276 bytes).
+Output written on ug_quad.pdf (43 pages, 268519 bytes).
 PDF statistics:
- 194 PDF objects out of 1000 (max. 8388607)
- 135 compressed objects within 2 object streams
+ 255 PDF objects out of 1000 (max. 8388607)
+ 173 compressed objects within 2 object streams
  0 named destinations out of 1000 (max. 500000)
- 1 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 16 words of extra memory for PDF output out of 10000 (max. 10000000)
 
