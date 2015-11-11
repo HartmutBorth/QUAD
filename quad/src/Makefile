@@ -10,8 +10,8 @@ DEBOPTS=-g -ffpe-trap=invalid,zero,overflow -ffpe-summary=none -fcheck=all -fini
 %.o : %.f90
 	$(F90) -c $(OPTS) $<
 
-quad.x:	quad.o fftfor.o fftasm.o rstmod.o
-	$(F90) -o quad.x $(OPTS) quad.o fftfor.o fftasm.o rstmod.o
+quad.x:	quad.o fftfor.o fftasm.o rstmod.o guimod.o pumax.o
+	$(F90) -o quad.x $(OPTS) quad.o fftfor.o fftasm.o rstmod.o guimod.o pumax.o -L/opt/X11 -lX11
 quad.o:	quad.f90
 fftfor.o:	fftfor.f90
 
@@ -19,6 +19,10 @@ fftasm.o:	fftasm.s
 	as -o fftasm.o fftasm.s
 
 rstmod.o:	rstmod.f90
+
+guimod.o:	guimod.f90
+
+pumax.o:	pumax.c
 
 clean:
 	rm -f quad.x *.o *.mod

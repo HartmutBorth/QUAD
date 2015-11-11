@@ -785,6 +785,8 @@ LOOP_I_IFFT8:
 _fast_mtp:
    .globl fast_mtp_
 fast_mtp_:
+   .globl _fast_mtp_
+_fast_mtp_:
 
    movl    (%rsi), %esi              # rsi = n
 
@@ -883,6 +885,8 @@ LOOP_I_FAST_MTP:
 _fast_ftp:
    .globl fast_ftp_
 fast_ftp_:
+   .globl _fast_ftp_
+_fast_ftp_:
 
 
    push    %rbx
@@ -1695,6 +1699,8 @@ LOOP_DFFT4M_B:
 _fast_gtp:
    .globl fast_gtp_
 fast_gtp_:
+   .globl _fast_gtp_
+_fast_gtp_:
 
    push    %rbx
    push    %r12
