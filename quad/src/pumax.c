@@ -1,6 +1,6 @@
 /*
-    pumax - a GUI for PUMA & PLASIM
-    2012 Edilbert Kirk
+    pumax - a GUI for PUMA, PLASIM & QUAD
+    2015 Edilbert Kirk & Hartmut Borth
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -85,6 +85,7 @@ int Debug = 0; // set in initgui
 /* Models */
 
 #define PUMA   0
+#define QUAD   4
 
 char *IsoNames[] =
 {
@@ -1578,6 +1579,8 @@ void CreateControlWindow(void)
    Window Rootwin;
    Window Child;
 
+   // Create title for control window
+
    strcpy(Title1,"Unknown model");
    if (Model == 0) // PUMA
    {
@@ -1595,13 +1598,16 @@ void CreateControlWindow(void)
        sprintf(Title1,"Run %d: Planet Simulator (%s) - KlimaCampus",MRpid,PlanetName);
    }
    else if (Model == 3) sprintf(Title1,"Planet Simulator / LSG - KlimaCampus");
+   else if (Model == 4) sprintf(Title1,"QUAD - The Versatile Fluid Simulator");
    else printf("*** unknown model number %d in pumax ***\n",Model);
+
    WinconTitle1 = Title1;
    if (CowW < 920 || CowW > ScreenW) CowW = 920;
    if (NumWin < 5) CowH = 6 * FixFontHeight + 5;
    else            CowH = NumWin * FixFontHeight + 5;
    if (CowX < 0 || CowX > ScreenW - CowW) CowX = (ScreenW - CowW) / 2;
-   if (CowY < 0 || CowY > ScreenBot - CowH - WinTM - WinBM) CowY = ScreenBot - CowH - WinTM - WinBM;
+   if (CowY < 0 || CowY > ScreenBot - CowH - WinTM - WinBM)
+       CowY = ScreenBot - CowH - WinTM - WinBM;
    CowSizeHints.flags      = PPosition | PSize | PMinSize | PMaxSize;
    CowSizeHints.min_width  = CowW;
    CowSizeHints.min_height = CowH;

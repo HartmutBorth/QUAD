@@ -3,13 +3,12 @@
 ! ========
 
 subroutine guistart
+use quadmod
 implicit none
 
-integer :: ngui    =  1 ! set by caller
 integer :: model   =  4 ! QUAD
-integer :: nguidbg =  0 ! Debug mode
 integer :: nlat    = 32 ! dummy value
-integer :: mrpid   =  0 ! # process ID
+integer :: mrpid   = -1 ! # process ID
 integer :: mrnum   =  1 ! # of instances
 
 character (80) :: yplanet = "QUAD" ! dummy
@@ -40,12 +39,8 @@ end subroutine guistop
 ! ============
 
 subroutine guistep_quad
+use quadmod
 implicit none
-
-integer  :: nshutdown     ! user action
-integer  :: ndatim(6) = 0 ! date & time info
-real (4) :: parc(5)       ! for timeseries display
-
 
 interface 
    integer(kind=4) function iguistep(parc,idatim)
@@ -55,7 +50,6 @@ interface
 end interface
 
 integer (kind=4) idatim(6)
-
 
 parc(1)   = 1.0
 parc(2)   = 2.0

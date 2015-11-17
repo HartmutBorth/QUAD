@@ -41,7 +41,7 @@ module quadmod
 ! *****************
 character (256) :: quadversion = "July 2015, Version 0.0"
 
-integer :: nshutdown = 0       ! flag to stop program (not active)
+integer :: nshutdown = 0       ! flag to stop program
 logical :: lrsttest  = .false. ! flag set to 1 for restart test, 
                                ! parameter nsteps is not written 
                                ! to restart file (it is tested for
@@ -313,9 +313,10 @@ real(8), allocatable :: gpsi(:,:) ! stream function      [m^2/s]
 real(8), allocatable :: gu(:,:)   ! velocity x-direction [m/s]
 real(8), allocatable :: gv(:,:)   ! velocity y-direction [m/s]
 
-real(8), allocatable :: guq(:,:) ! u*vorticity
-real(8), allocatable :: gvq(:,:) ! v*vorticity
+real(8), allocatable :: guq(:,:)  ! u*vorticity
+real(8), allocatable :: gvq(:,:)  ! v*vorticity
 
+real(4), allocatable :: gui(:,:)  ! single precision transfer
 
 !--- variables in Fourierspace, real representation (F)
 real(8), allocatable :: fpsi(:,:) ! stream function
@@ -342,6 +343,13 @@ real(8)   , allocatable :: ki2(:), kj2(:)
 real(8)   , allocatable :: k2n(:,:), rk2an(:,:)
 real(8)   , allocatable :: kirk2an(:,:),kjrk2an(:,:)
 complex(8), allocatable :: cli(:,:)                  ! linear time propagation
+
+!--- gui communication
+integer :: ngui    = 1   ! global switch 1 = on
+integer :: nguidbg = 0   ! GUI debug mode
+
+integer :: ndatim(6) = 1 ! date/time display
+real(4) :: parc(5) = 0.0 ! timeseries display
 
 end module quadmod
 
@@ -398,6 +406,8 @@ else
 endif
 
 if (tstep .eq. 0) call init_tstepping
+
+if (ngui > 0) call guistart
 
 return
 end subroutine prolog
@@ -661,6 +671,7 @@ allocate(gpsi(1:ngx,1:ngy)) ; gpsi(:,:) = 0.0  ! stream function
 allocate(guq(1:ngx,1:ngy))  ; guq(:,:)  = 0.0  ! u*vorticity
 allocate(gvq(1:ngx,1:ngy))  ; gvq(:,:)  = 0.0  ! v*vorticity
 
+allocate(gui(1:ngx,1:ngy))  ; gui(:,:)  = 0.0  ! GUI transfer
 
 !--- spetral space 
 allocate(fu(0:nfx,0:nfy))   ; fu(:,:)   = 0.0 ! u 
@@ -1081,6 +1092,20 @@ return
 end subroutine write_output
 
 
+! ****************
+! * GUI TRANSFER *
+! ****************
+subroutine gui_transfer
+use quadmod
+implicit none
+
+gui(:,:) = gq(:,:) ! double precision -> single
+call guiput("GQ" // char(0), gui, ngx, ngy, 1)
+
+return
+end subroutine gui_transfer
+
+
 ! ************
 ! * WRITE_GP *
 ! ************
@@ -1217,6 +1242,10 @@ do while (tstep <= tstop)
    call q2gquv
    call jacobian
    call write_output
+   if (ngui > 0) then
+      call gui_transfer
+      call guistep_quad
+   endif
    call step_forward
    if (nforc .ge. 1) call add_forc
    tstep = tstep + 1
@@ -1265,6 +1294,8 @@ end subroutine step_forward
 subroutine epilog
 use quadmod
 implicit none
+
+if (ngui > 0) call guistop
 
 call write_rst
 
