@@ -345,7 +345,7 @@ real(8)   , allocatable :: kirk2an(:,:),kjrk2an(:,:)
 complex(8), allocatable :: cli(:,:)                  ! linear time propagation
 
 !--- gui communication
-integer :: ngui    = 1   ! global switch 1 = on
+integer :: ngui    = 20  ! global switch 1 = on
 integer :: nguidbg = 0   ! GUI debug mode
 
 integer :: ndatim(6) = 1 ! date/time display
@@ -1242,7 +1242,7 @@ do while (tstep <= tstop)
    call q2gquv
    call jacobian
    call write_output
-   if (ngui > 0) then
+   if (ngui > 0 .and. mod(tstep,ngui) == 0) then
       call gui_transfer
       call guistep_quad
    endif

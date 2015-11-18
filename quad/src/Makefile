@@ -5,7 +5,7 @@ OPTS=-O2 -ffpe-trap=invalid,zero,overflow  -finit-real=snan
 DEBOPTS=-g -ffpe-trap=invalid,zero,overflow -ffpe-summary=none -fcheck=all -finit-real=snan
 
 %.o : %.c
-	$(CC) -c $<
+	$(CC) -O3 -c $<
 
 %.o : %.f90
 	$(F90) -c $(OPTS) $<
