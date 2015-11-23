@@ -69,18 +69,19 @@ int Debug = 0; // set in initgui
 
 /* Picture types */
 
-#define ISOHOR  0
-#define ISOCS   1
-#define ISOHOV  2
-#define ISOTS   3
-#define ISOTAB  4
-#define ISOSH   5
-#define ISOLON  6
-#define ISOTRA  7
-#define ISOCOL  8
-#define ISOROT  9
-#define MAPHOR 10
-#define MAPTRA 11
+#define ISOREC  0
+#define ISOHOR  1
+#define ISOCS   2
+#define ISOHOV  3
+#define ISOTS   4
+#define ISOTAB  5
+#define ISOSH   6
+#define ISOLON  7
+#define ISOTRA  8
+#define ISOCOL  9
+#define ISOROT 10
+#define MAPHOR 11
+#define MAPTRA 12
 
 /* Models */
 
@@ -89,6 +90,7 @@ int Debug = 0; // set in initgui
 
 char *IsoNames[] =
 {
+   "ISOREC",
    "ISOHOR",
    "ISOCS",
    "ISOHOV",
@@ -4014,8 +4016,15 @@ void iso(int w,int PicType,REAL *field,int dimx,int dimy,int dimz,int pal)
    // if (Debug) printf("iso(%d,%s,%12.4e,%d,%d,%d,%d)\n",w,IsoNames[PicType],*field,dimx,dimy,dimz,pal);
    if (Win[w] == 0) return;
    win = w;
+
+   // At high frame rates (SkipFreq > 1) some types are redrawn
+   // at "SkipFreq" intervals
+
    if (SkipFreq > 1 && (nstep % SkipFreq) != 0 && 
-      (PicType == ISOCS || PicType == ISOHOR || PicType == MAPHOR || PicType == ISOCOL)) return;
+      (PicType == ISOCS  || PicType == ISOHOR ||
+       PicType == MAPHOR || PicType == ISOCOL ||
+       PicType == ISOREC )) return;
+
    XGetGeometry(display,Win[w],&Rootwin,&xp,&yp,&WinXSize,&WinYSize,
 		&border,&depth);
    WinAtt[w].w = WinXSize;
@@ -4064,7 +4073,7 @@ void iso(int w,int PicType,REAL *field,int dimx,int dimy,int dimz,int pal)
       }
    }
 
-   if (PicType == ISOHOR || PicType == MAPHOR)
+   if (PicType == ISOREC || PicType == ISOHOR || PicType == MAPHOR)
    {
       DimX  = dimx; // NLON
       DimY  = dimy; // NLAT
@@ -4229,7 +4238,8 @@ void iso(int w,int PicType,REAL *field,int dimx,int dimy,int dimz,int pal)
    if ((SizeChanged || Cstrip == Autostrip) &&
        (PicType == ISOCS  || PicType == ISOHOR ||
        	PicType == ISOHOV || PicType == ISOLON ||
-        PicType == ISOCOL || PicType == MAPHOR ))
+        PicType == ISOCOL || PicType == MAPHOR ||
+        PicType == ISOREC ))
    {
       XSetForeground(display,gc,BlackPix);
       XFillRectangle(display,pix,gc,0,InYSize,WinXSize,WinYSize);
@@ -4507,13 +4517,22 @@ void iso(int w,int PicType,REAL *field,int dimx,int dimy,int dimz,int pal)
       }
       TracerPlot(w);
    }
-   if (PicType == ISOCS || PicType == ISOHOR || PicType == ISOLON || PicType == ISOCOL)
+
+   // Now perform the plotting of areas and lines for simple
+   // rectangles with no transformation/projection involved
+
+   if (PicType == ISOCS  || PicType == ISOHOR ||
+       PicType == ISOLON || PicType == ISOCOL ||
+       PicType == ISOREC )
    {
       XSetForeground(display,gc,BlackPix);
       XFillRectangle(display,pix,gc,0,0,WinXSize,InYSize);
       IsoAreas(Cstrip);
       IsoLines(Cstrip,0);
    }
+
+   // Plotting of azimuthal or polar projection
+
    if (PicType == MAPHOR)
    {
       if (MapHR.X)
@@ -4555,11 +4574,16 @@ void iso(int w,int PicType,REAL *field,int dimx,int dimy,int dimz,int pal)
          IsoLines(Cstrip,1);
       }
    }
+
+   // Hovmoeller diagram
+
    if (PicType == ISOHOV)
    {
       IsoAreas(Cstrip);
    }
    
+   // amplitudes of coeeficients of spherical harmonics
+
    if (PicType == ISOSH)
    {
       AmplitudePlot();     
@@ -4572,6 +4596,8 @@ void iso(int w,int PicType,REAL *field,int dimx,int dimy,int dimz,int pal)
    if (PicType == ISOHOR &&  MapPro[w] == 1) ShowGridPolar();
    if (Grid && PicType == ISOHOR && MapPro[w] == 0) ShowGridCyl();
    if (Grid && PicType == ISOCOL) ShowGridCol();
+
+   // copy drawn image into visible display
 
    XCopyArea(display,pix,Win[w],gc,0,0,WinXSize,WinYSize,0,0);
 }
