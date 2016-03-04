@@ -61,14 +61,14 @@ complex(8), parameter :: ci = (0.0d0,1.0d0)  ! complex unit
 ! ****************
 
 !--- flags and switches
-logical :: lrst   = .false.   ! true if <quad_rstini> exists
-logical :: lnl    = .false.   ! true if <quad_namelist> exists
+logical :: lrst    = .false.   ! true if <quad_rstini> exists
+logical :: lquadnl = .false.   ! true if <quad_namelist> exists
 
 integer :: ios_nl = 1         ! 0 if <quad_namelist> is readable
 
 
 !--- i/o units
-integer, parameter :: nunl        = 10  ! namelist
+integer, parameter :: nuquadnl    = 10  ! quad namelist
 integer, parameter :: nuin        = 15  ! initial conditions
 integer, parameter :: nutseri     = 20  ! time series
 integer, parameter :: nucfl       = 25  ! time series
@@ -316,7 +316,7 @@ real(8), allocatable :: gv(:,:)   ! velocity y-direction [m/s]
 real(8), allocatable :: guq(:,:)  ! u*vorticity
 real(8), allocatable :: gvq(:,:)  ! v*vorticity
 
-real(4), allocatable :: gui(:,:)  ! single precision transfer
+real(4), allocatable :: ggui(:,:) ! single precision transfer
 
 !--- variables in Fourierspace, real representation (F)
 real(8), allocatable :: fpsi(:,:) ! stream function
@@ -326,7 +326,7 @@ real(8), allocatable :: fv(:,:)   ! velocity y-direction
 real(8), allocatable :: fuq(:,:)  ! u*vorticity
 real(8), allocatable :: fvq(:,:)  ! v*vorticity
 
-real(8), allocatable :: ftmp(:,:) ! temporary utility field
+real(8), allocatable :: ftmp(:,:) ! temporary field for, e.g. i/o
 
 
 !--- variables in Fourierspace, complex representation (
@@ -345,7 +345,7 @@ real(8)   , allocatable :: kirk2an(:,:),kjrk2an(:,:)
 complex(8), allocatable :: cli(:,:)                  ! linear time propagation
 
 !--- gui communication
-integer :: ngui    = 20  ! global switch 1 = on
+integer :: ngui    = 1   ! global switch 1 = on
 integer :: nguidbg = 0   ! GUI debug mode
 
 integer :: ndatim(6) = 1 ! date/time display
@@ -353,6 +353,15 @@ real(4) :: parc(5) = 0.0 ! timeseries display
 
 end module quadmod
 
+! ****************
+! * MODUL INIMOD *
+! ****************
+module inimod
+
+use quadmod
+
+
+end module inimod
 
 ! ********
 ! * QUAD *
@@ -394,7 +403,7 @@ if (lrst) then
    call check_rst
    call read_rst
 endif
-if (lnl) call read_nl
+if (lquadnl) call read_nl
 if (tstep .eq. 0) call read_input
 call init_ltprop
 call init_rand
@@ -424,9 +433,9 @@ if (lrst) then
   open(nurstini,file=quad_rstini,form='unformatted')
 endif
 
-inquire(file=quad_namelist,exist=lnl)
-if (lnl) then
-  open(nunl,file=quad_namelist,iostat=ios_nl)
+inquire(file=quad_namelist,exist=lquadnl)
+if (lquadnl) then
+  open(nuquadnl,file=quad_namelist,iostat=ios_nl)
 endif
 
 open(nurstfin,file=quad_rstfin,form='unformatted')
@@ -561,7 +570,7 @@ use quadmod
 implicit none
 
 
-namelist /quad_nl/ nsteps    ,ngp       ,ingp    ,insp     ,            &
+namelist /quad_nl/ nsteps    ,ngp       ,ngui    ,ingp    ,insp       , &
                    ncfl      ,dt        ,alpha   ,beta     ,lx        , &
                    ly        ,sig       ,psig    ,rtsig    ,ksig      , &
                    lam       ,plam      ,rtlam   ,klam     ,diss_mthd , &
@@ -569,7 +578,7 @@ namelist /quad_nl/ nsteps    ,ngp       ,ingp    ,insp     ,            &
                    myseed    ,ntseri    ,nstdout ,jac_mthd ,ndiag     , &
                    jac_scl   ,nsp       ,outgp   ,outsp    ,tstp_mthd
 
-if (lnl) read(nunl,quad_nl) 
+if (lquadnl) read(nuquadnl,quad_nl) 
 
 write(nudiag, &
  '(/," *************************************************")')
@@ -671,17 +680,17 @@ allocate(gpsi(1:ngx,1:ngy)) ; gpsi(:,:) = 0.0  ! stream function
 allocate(guq(1:ngx,1:ngy))  ; guq(:,:)  = 0.0  ! u*vorticity
 allocate(gvq(1:ngx,1:ngy))  ; gvq(:,:)  = 0.0  ! v*vorticity
 
-allocate(gui(1:ngx,1:ngy))  ; gui(:,:)  = 0.0  ! GUI transfer
+allocate(ggui(1:ngx,1:ngy)) ; ggui(:,:)  = 0.0  ! GUI transfer
 
 !--- spetral space 
 allocate(fu(0:nfx,0:nfy))   ; fu(:,:)   = 0.0 ! u 
 allocate(fv(0:nfx,0:nfy))   ; fv(:,:)   = 0.0 ! v 
 allocate(fuq(0:nfx,0:nfy))  ; fuq(:,:)  = 0.0 ! u*q
 allocate(fvq(0:nfx,0:nfy))  ; fvq(:,:)  = 0.0 ! v*q
-allocate(ftmp(0:nfx,0:nfy)) ; ftmp(:,:) = 0.0 ! temporary field
+allocate(ftmp(0:nfx,0:nfy)) ; ftmp(:,:) = 0.0 ! temporary field for, e.g. i/o
 
-allocate(k2n(0:nkx,0:nfy))   ; k2n(:,:)   = 0.0 ! Laplacian
-allocate(rk2an(0:nkx,0:nfy)) ; rk2an(:,:) = 0.0 ! inverse of modified Laplacian
+allocate(k2n(0:nkx,0:nfy))     ;k2n(:,:)     = 0.0 ! Laplacian
+allocate(rk2an(0:nkx,0:nfy))   ;rk2an(:,:)   = 0.0 ! modified Laplacian^-1
 allocate(kirk2an(0:nkx,0:nfy)) ;kirk2an(:,:) = 0.0 ! q --> v
 allocate(kjrk2an(0:nkx,0:nfy)) ;kjrk2an(:,:) = 0.0 ! q --> u
 
@@ -1099,8 +1108,8 @@ subroutine gui_transfer
 use quadmod
 implicit none
 
-gui(:,:) = gq(:,:) ! double precision -> single
-call guiput("GQ" // char(0), gui, ngx, ngy, 1)
+ggui(:,:) = gq(:,:) ! double precision -> single
+call guiput("GQ" // char(0), ggui, ngx, ngy, 1)
 
 return
 end subroutine gui_transfer
@@ -1384,7 +1393,7 @@ subroutine close_files
 use quadmod
 
 if (lrst)            close(nurstini)
-if (lnl)             close(nunl) 
+if (lquadnl)         close(nuquadnl) 
 close(nurstfin)
 close(nudiag)
 if (ntseri .ge. 0)   close(nutseri)

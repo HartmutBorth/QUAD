@@ -8,6 +8,7 @@
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
 \@writefile{toc}{\contentsline {section}{\numberline {1.1}Classical non-rotating case}{7}}
+\newlabel{sec_2Dcase}{{1.1}{7}}
 \newlabel{eq_2Dvortvel}{{1.1}{7}}
 \newlabel{eq_conti}{{1.2}{7}}
 \newlabel{eq_psizetadef}{{1.3}{7}}
@@ -19,7 +20,8 @@
 \citation{vanheist1994}
 \citation{johnstonandliu2004}
 \newlabel{eq_2Duv}{{1.8}{8}}
-\@writefile{toc}{\contentsline {section}{\numberline {1.2}Quasi-two-dimensional rotating fluids}{8}}
+\@writefile{toc}{\contentsline {section}{\numberline {1.2}Quasi-two-dimensional rotating case}{8}}
+\newlabel{sec_quasi2Dcase}{{1.2}{8}}
 \newlabel{eq_qdef}{{1.9}{8}}
 \newlabel{eq_quasi2Dbaro}{{1.11}{8}}
 \newlabel{eq_vortquasi2Dbaro}{{1.12}{8}}
@@ -27,14 +29,21 @@
 \citation{danilovandgurarie2001}
 \newlabel{eq_quasi2Dbarozeta}{{1.14}{9}}
 \@writefile{toc}{\contentsline {section}{\numberline {1.3}Non-adiabatic terms}{9}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {1.3.1}Laplacian viscosity and friction}{9}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.3.1}Laplacian based Viscosity and friction}{9}}
 \newlabel{eq_Laplace_dissip}{{1.15}{9}}
-\newlabel{eq_siglam}{{1.16}{9}}
+\newlabel{eq_Laplace_dissip_02}{{1.16}{9}}
+\newlabel{eq_siglam}{{1.17}{9}}
+\newlabel{eq_Laplace_dissip_poly}{{1.18}{9}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {1.3.2}Forcing}{9}}
-\newlabel{eq_Fstressdrag}{{1.17}{9}}
+\newlabel{eq_Fstressdrag}{{1.19}{10}}
 \@writefile{toc}{\contentsline {section}{\numberline {1.4}Geometry and boundary conditions}{10}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.4.1}Doubly periodic boundary condition}{10}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.4.2}Channel boundary condition}{10}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.4.3}Box boundary condition}{10}}
 \@writefile{toc}{\contentsline {part}{II\hspace  {1em}Numerical Implementation}{11}}
 \citation{braccoandmcwilliams2010}
+\citation{fraedrichetal1998}
+\citation{borthetal2016}
 \@writefile{toc}{\contentsline {chapter}{\numberline {2}Model history}{13}}
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
@@ -67,66 +76,103 @@
 \newlabel{eq_inversefourier_2D1D}{{3.16}{17}}
 \newlabel{eq_inversefourier_1D}{{3.17}{17}}
 \newlabel{eq_forwardfourier_1D_matrix}{{3.18}{17}}
-\newlabel{eq_F2F3}{{3.19}{18}}
-\newlabel{eq_F4F8}{{3.20}{18}}
+\newlabel{eq_F2F3F4}{{3.19}{18}}
+\newlabel{eq_F8}{{3.20}{18}}
+\newlabel{eq_inversefourier_1D_matrix}{{3.21}{18}}
 \@writefile{toc}{\contentsline {section}{\numberline {3.2}Fast Fourier Transform}{18}}
 \newlabel{sec_fft}{{3.2}{18}}
-\newlabel{eq_FNFNr2}{{3.21}{18}}
-\newlabel{eq_FNFNr2_01}{{3.22}{18}}
-\newlabel{eq_FNFNr2_02}{{3.23}{18}}
-\@writefile{toc}{\contentsline {section}{\numberline {3.3}Evolution equations in Fourier space}{19}}
-\newlabel{ssec_evolfourier}{{3.3}{19}}
-\newlabel{eq_fourvortquasi2Dbaro}{{3.24}{19}}
-\newlabel{eq_psihatqhat}{{3.25}{19}}
-\newlabel{eq_uhat}{{3.26}{19}}
-\newlabel{eq_vhat}{{3.27}{19}}
-\newlabel{eq_evolqhat}{{3.28}{19}}
-\newlabel{eq_qhatbetasol}{{3.29}{19}}
-\@writefile{toc}{\contentsline {section}{\numberline {3.4}Dissipation schemes}{19}}
-\newlabel{ssec_Dschemes}{{3.4}{19}}
-\newlabel{eq_Laplace_dissip_Fourier}{{3.30}{19}}
-\newlabel{eq_Laplace_dissip_Fourier2}{{3.31}{19}}
-\newlabel{fig_physgrid}{{3.7}{20}}
-\@writefile{lof}{\contentsline {figure}{\numberline {3.1}{\ignorespaces In physical space functions $g(x,y)$ are represented on a regular grid with $ngx$ grid points in $x$-direction and $ngy$ grid points in $y$-direction. At present in QUAD only the default $ngx = ngy$ is implemented.}}{20}}
-\@writefile{toc}{\contentsline {section}{\numberline {3.5}Forcing schemes}{20}}
-\newlabel{ssec_Fschemes}{{3.5}{20}}
-\@writefile{toc}{\contentsline {section}{\numberline {3.6}Time-stepping schemes}{20}}
-\newlabel{ssec_Tschemes}{{3.6}{20}}
-\@writefile{toc}{\contentsline {section}{\numberline {3.7}The grid representation in QUAD}{20}}
-\newlabel{ssec_Grids}{{3.7}{20}}
-\newlabel{eq_ncentwgrid}{{3.32}{20}}
-\newlabel{eq_nkxnky}{{3.33}{20}}
-\newlabel{fig_ctorspecgrid}{{3.7}{21}}
-\@writefile{lof}{\contentsline {figure}{\numberline {3.2}{\ignorespaces Functions in spectral space are represented either as complex fields $c$ or as real fields $f$ containing in the first spectral coordinate $k_{x}$ the real and imaginary parts of $c$ in an alternating series.}}{21}}
-\newlabel{fig_cspecgrid}{{3.7}{22}}
-\@writefile{lof}{\contentsline {figure}{\numberline {3.3}{\ignorespaces Internally spectral fields are given for the non-centered wave numbers given by equation (\G@refundefinedtrue {\unhbox \voidb@x \hbox {\normalfont  \bfseries  ??}}\GenericWarning  {               }{LaTeX Warning: Reference `eq_noncentwgrid' on page 22 undefined}), for the visualization in the GUI the amplitudes and phases of the complex spectral fields are represented on thee centered wave-number grid given by equation (3.34\hbox {})}}{22}}
-\newlabel{eq_centwgrid}{{3.34}{22}}
-\newlabel{eq_amppha}{{3.35}{22}}
-\@writefile{toc}{\contentsline {chapter}{\numberline {4}Reference test cases and performance}{23}}
+\newlabel{eq_FNFNr2}{{3.22}{18}}
+\newlabel{eq_FNFNr2_01}{{3.23}{19}}
+\newlabel{eq_FNFNr2_02}{{3.24}{19}}
+\newlabel{eq_dirmatprod}{{3.25}{19}}
+\newlabel{eq_exF4twoF2}{{3.26}{19}}
+\newlabel{eq_FNFNr4}{{3.27}{19}}
+\newlabel{eq_FNFNr4def01}{{3.28}{19}}
+\newlabel{eq_FNFNr4def02}{{3.30}{19}}
+\newlabel{eq_FNFNr4def03}{{3.32}{19}}
+\newlabel{eq_F8ex01}{{3.33}{19}}
+\newlabel{eq_F8ex02}{{3.34}{20}}
+\newlabel{eq_FNFNr8}{{3.35}{20}}
+\newlabel{eq_FNFNr8def01}{{3.36}{20}}
+\newlabel{eq_FNFNr2_T}{{3.37}{20}}
+\newlabel{eq_FNFNr4_T}{{3.38}{20}}
+\newlabel{eq_FNFNr8_T}{{3.39}{20}}
+\newlabel{eq_FNFNr2_inverse}{{3.40}{20}}
+\newlabel{eq_FNFNr4_inverse}{{3.41}{20}}
+\newlabel{eq_FNFNr8_inverse}{{3.42}{20}}
+\newlabel{eq_FNFNr2_Tinverse}{{3.43}{20}}
+\newlabel{eq_FNFNr4_Tinverse}{{3.44}{20}}
+\newlabel{eq_FNFNr8_Tinverse}{{3.45}{20}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.3}Evolution equations in Fourier space}{20}}
+\newlabel{ssec_evolfourier}{{3.3}{20}}
+\citation{kreissandoliger1972}
+\citation{orszag1972}
+\newlabel{eq_fourvortquasi2Dbaro}{{3.46}{21}}
+\newlabel{eq_psihatqhat}{{3.47}{21}}
+\newlabel{eq_uhat}{{3.48}{21}}
+\newlabel{eq_vhat}{{3.49}{21}}
+\newlabel{eq_evolqhat}{{3.50}{21}}
+\newlabel{eq_evolqhat_lin}{{3.51}{21}}
+\newlabel{eq_qhatbetasol}{{3.52}{21}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.4}Jacobian}{21}}
+\newlabel{sec_jacobian}{{3.4}{21}}
+\newlabel{eq_jacobian01}{{3.53}{22}}
+\newlabel{eq_jacobian01_termsa}{{3.54}{22}}
+\newlabel{eq_jacobian01_termsb}{{3.55}{22}}
+\newlabel{eq_jacobian01_J}{{3.56}{22}}
+\newlabel{eq_jacobian01_Jall}{{3.57}{22}}
+\newlabel{eq_jacobian02}{{3.58}{22}}
+\newlabel{eq_jacobian02_J}{{3.59}{22}}
+\newlabel{eq_jacobian02_Jall}{{3.60}{22}}
+\newlabel{eq_jacobian03}{{3.61}{22}}
+\newlabel{eq_jacobian03_J}{{3.62}{23}}
+\newlabel{eq_jacobian02_Jall}{{3.63}{23}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.5}Dissipation}{23}}
+\newlabel{ssec_Dschemes}{{3.5}{23}}
+\newlabel{eq_Laplace_dissip_Fourier}{{3.64}{23}}
+\newlabel{eq_Laplace_dissip_Fourier2}{{3.65}{23}}
+\newlabel{eq_Laplace_dissip_Fourier3}{{3.66}{23}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.6}Forcing}{23}}
+\newlabel{ssec_Fschemes}{{3.6}{23}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.7}Time-stepping schemes}{23}}
+\newlabel{ssec_Tschemes}{{3.7}{23}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.8}The grid representation in QUAD}{23}}
+\newlabel{ssec_Grids}{{3.8}{23}}
+\newlabel{fig_physgrid}{{3.8}{24}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3.1}{\ignorespaces In physical space functions $g(x,y)$ are represented on a regular grid with $ngx$ grid points in $x$-direction and $ngy$ grid points in $y$-direction. At present in QUAD only the default $ngx = ngy$ is implemented.}}{24}}
+\newlabel{fig_ctorspecgrid}{{3.8}{24}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3.2}{\ignorespaces Functions in spectral space are represented either as complex fields $c$ (plate a) or as real fields $f$ containing in the first spectral coordinate $k_{x}$ the real and imaginary parts of $c$ in an alternating series (plate b).}}{24}}
+\newlabel{fig_cspecgrid}{{3.8}{25}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3.3}{\ignorespaces Internally (plate a) complex spectral fields $c$ are defined on the non-centered wave number grid given by (3.67\hbox {}). To visualize complex spectral fields (plate b) amplitudes $amp(c)$ and phases $pha(c)$ are sent to the graphical user interface (GUI) on the centered wave-number grid given by (3.69\hbox {}).}}{25}}
+\newlabel{eq_ncentwgrid}{{3.67}{25}}
+\newlabel{eq_nkxnky}{{3.68}{25}}
+\newlabel{eq_centwgrid}{{3.69}{26}}
+\newlabel{eq_amppha}{{3.70}{26}}
+\@writefile{toc}{\contentsline {chapter}{\numberline {4}Reference test cases and performance}{27}}
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
-\@writefile{toc}{\contentsline {part}{III\hspace  {1em}Using the Model}{25}}
-\@writefile{toc}{\contentsline {chapter}{\numberline {5}Implementing the model}{27}}
+\@writefile{toc}{\contentsline {part}{III\hspace  {1em}Using the Model}{29}}
+\@writefile{toc}{\contentsline {chapter}{\numberline {5}Implementing the model}{31}}
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
-\@writefile{toc}{\contentsline {chapter}{\numberline {6}Running the model}{29}}
+\@writefile{toc}{\contentsline {chapter}{\numberline {6}Running the model}{33}}
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
-\@writefile{toc}{\contentsline {chapter}{\numberline {7}Analysing the model output}{31}}
+\@writefile{toc}{\contentsline {chapter}{\numberline {7}Analysing the model output}{35}}
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
-\@writefile{toc}{\contentsline {chapter}{\numberline {8}Modifying the model}{33}}
+\@writefile{toc}{\contentsline {chapter}{\numberline {8}Modifying the model}{37}}
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
-\@writefile{toc}{\contentsline {part}{IV\hspace  {1em}Appendix}{35}}
-\@writefile{toc}{\contentsline {chapter}{\numberline {A}Namelists and parameters}{37}}
+\@writefile{toc}{\contentsline {part}{IV\hspace  {1em}Appendix}{39}}
+\@writefile{toc}{\contentsline {chapter}{\numberline {A}Namelists and parameters}{41}}
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
-\@writefile{toc}{\contentsline {chapter}{\numberline {B}Moduls and basic model variables}{39}}
+\@writefile{toc}{\contentsline {chapter}{\numberline {B}Moduls and basic model variables}{43}}
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
 \bibdata{ref}
-\@writefile{toc}{\contentsline {chapter}{\numberline {C}Structure of code and flow scheme}{41}}
+\@writefile{toc}{\contentsline {chapter}{\numberline {C}Structure of code and flow scheme}{45}}
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
 \bibcite{batchelor1967}{{1}{1967}{{Batchelor}}{{}}}

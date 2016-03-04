@@ -21,6 +21,7 @@
 &QUAD_NL
  NSTEPS=      50000,
  NGP=        250,
+ NGUI=        250,
  INGP=        138, 4*0          ,
  INSP= 5*0          ,
  NCFL=        500,
@@ -62,6 +63,6 @@
  *************************************************
 
  *************************************************
-  Total time in seconds:           40.39
-  Time steps per second:         1238
+  Total time in seconds:         5975.90
+  Time steps per second:            8
  *************************************************

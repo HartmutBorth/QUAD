@@ -1,4 +1,5 @@
  $quad_nl
+ ngui      = 250
  diss_mthd = 1
  jac_scl   = 1.0
  dt        = 1.0d-3
