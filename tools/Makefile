@@ -1,4 +1,4 @@
-NGX=64
+NGX=128
 
 F90=gfortran
 
@@ -18,7 +18,7 @@ cleanall:
 	rm -f MakeIni.x *.o *.mod G*.srv
 
 run:
-	MakeIni.x $(NGX)
+	./MakeIni.x $(NGX)
 
 all:
 	make cleanall

@@ -1,8 +1,8 @@
 function  [out_amp,out_arg] = f_readsp(fname,vname)
-% F_READSP reads the quad output in spectral format and transforms it
+% F_READSP reads the cat output in spectral format and transforms it
 % to a format centred in spectral space. For octave users f_readsp
 % only works if package <netcdf> is installed and loaded. The variables
-% to be read are assumed to be in the spectral QUAD output format.
+% to be read are assumed to be in the spectral CAT output format.
 % For more details see below. 
 %
 % syntax

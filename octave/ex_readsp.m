@@ -14,7 +14,7 @@ nx     = 64;
 ny     = 64;
 
 %--- define i/o
-infile = ["quad_sp.nc"];
+infile = ["cat_sp.nc"];
 invar  = ["var138"];
 
 %--- read amplitudes and phases

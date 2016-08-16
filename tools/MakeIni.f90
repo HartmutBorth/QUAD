@@ -79,8 +79,6 @@ do jy = 1 , ny
    enddo
 enddo
 
-
-
 !    z(nx/2,ny/2) = 2.0
 
 call mk_fname(nx,kcode,fname,"GP")
