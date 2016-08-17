@@ -13,6 +13,9 @@ rm -f full*
 #--- set namelist parameter nsteps in cat_namelist to 10000 
 sed -i -e 's/nsteps.*/nsteps = 10000/' cat_namelist
 
+#--- deactivate the gui in cat_namelist
+sed -i -e 's/ngui.*/ngui = 0/' cat_namelist
+
 #--- compile and run first part of run
 make
 make run

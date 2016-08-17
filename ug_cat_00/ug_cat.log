@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex 2016.7.18)  16 AUG 2016 16:27
+This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex 2016.7.18)  17 AUG 2016 16:19
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -269,7 +269,7 @@ Chapter 1.
 
 ] [8] [9]) [10] [11
 
-] [12] (./chap_modhist.tex
+] [12] (./chap_cathist.tex
 Chapter 2.
 
 Package natbib Warning: Citation `fraedrichetal1998' on page 13 undefined on in
@@ -337,25 +337,25 @@ File: figures/diss_mask.pdf Graphic file (type pdf)
 <use figures/diss_mask.pdf>
 Package pdftex.def Info: figures/diss_mask.pdf used on input line 1407.
 (pdftex.def)             Requested size: 379.68704pt x 284.52756pt.
-) (./chap_testperform.tex [26] [27 <./figures/diss_mask.pdf>] [28
+) (./chap_sims.tex [26] [27 <./figures/diss_mask.pdf>] [28
 
 ]
 Chapter 4.
 ) [29] [30
 
-] [31] [32] (./chap_impmod.tex
+] [31] [32] (./chap_impcat.tex
 Chapter 5.
-) (./chap_runmod.tex [33
+) (./chap_runcat.tex [33
 
 ] [34
 
 ]
 Chapter 6.
-) (./chap_modoutput.tex [35] [36
+) (./chap_catoutput.tex [35] [36
 
 ]
 Chapter 7.
-) (./chap_modifymod.tex [37] [38
+) (./chap_modifycat.tex [37] [38
 
 ]
 Chapter 8.
@@ -396,7 +396,7 @@ LaTeX Warning: There were multiply-defined labels.
  ) 
 Here is how much of TeX's memory you used:
  2716 strings out of 494953
- 38615 string characters out of 6180977
+ 38594 string characters out of 6180977
  117239 words of memory out of 5000000
  5924 multiletter control sequences out of 15000+600000
  11346 words of font info for 44 fonts, out of 8000000 for 9000
@@ -417,7 +417,7 @@ usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/sh
 are/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/share/tex
 live/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb></usr/share/texlive/t
 exmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb>
-Output written on ug_cat.pdf (49 pages, 323696 bytes).
+Output written on ug_cat.pdf (49 pages, 323908 bytes).
 PDF statistics:
  304 PDF objects out of 1000 (max. 8388607)
  204 compressed objects within 3 object streams

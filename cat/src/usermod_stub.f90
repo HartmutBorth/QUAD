@@ -1,8 +1,7 @@
-module usermod
-use catmod
+!---------------------------------------------------!
+! Dummy user modul used if CAT runs in default mode !
+!---------------------------------------------------!
 
-
-end module usermod
 
 ! ************************
 ! * SUBROUTINE USERSTART *

@@ -42,10 +42,23 @@ module catmod
 character (256) :: catversion = "July 2016, Version 0.1"
 
 integer :: nshutdown = 0       ! flag to stop program
-logical :: lrsttest  = .false. ! flag set to 1 for restart test, 
+logical :: lrsttest  = .false. ! flag set to .true. for restart test, 
                                ! parameter nsteps is not written 
-                               ! to restart file (it is tested for
-                               ! the file RSTTEST
+                               ! to restart file. lrsttest is set to
+                               ! true if a file RSTTEST is found in the
+                               ! run directory. Call <make rsttest> to
+                               ! do the restart test. To clean the run
+                               ! after a restart test call <make cleanresttest> 
+
+logical :: lsim  = .false.     ! flag set to .true. to activate predefined
+                               ! simulations. The simulation mode is activated 
+                               ! if a file SIMMODE is found in the run directory  
+logical :: luser = .false.     ! flag set to .true. to activate usermode.
+                               ! In usermode it is possible to modify 
+                               ! the code of CAT (see chapter <Modifying CAT>
+                               ! in the User's Guide). The user mode is
+                               ! activated by a file USERMODE
+
 
 ! ***************************
 ! * Physics and mathematics *
@@ -63,27 +76,23 @@ complex(8), parameter :: ci = (0.0d0,1.0d0)  ! complex unit
 !--- flags and switches
 logical :: lrst    = .false.   ! true if <cat_rstini> exists
 logical :: lcatnl  = .false.   ! true if <cat_namelist> exists
-logical :: lsimnl  = .false.   ! true if <sim_namelist> exists
 
 integer :: ios_catnl  = 1      ! 0 if <cat_namelist> is readable
-integer :: ios_simnl  = 1      ! 0 if <sim_namelist> is readable
 
 
 !--- i/o units
 integer, parameter :: nucatnl     = 10  ! cat namelist
-integer, parameter :: nusimnl     = 15  ! cat namelist
-integer, parameter :: nuin        = 20  ! initial conditions
-integer, parameter :: nutseri     = 25  ! time series
-integer, parameter :: nucfl       = 30  ! time series
-integer, parameter :: nugp        = 35  ! gridpoint output fields
-integer, parameter :: nusp        = 40  ! spectral output fields
-integer, parameter :: nurstini    = 45  ! restart for reading initial state
-integer, parameter :: nurstfin    = 50  ! restart for writing final state
-integer, parameter :: nudiag      = 55  ! statistics of model run
+integer, parameter :: nuin        = 15  ! initial conditions
+integer, parameter :: nutseri     = 20  ! time series
+integer, parameter :: nucfl       = 25  ! time series
+integer, parameter :: nugp        = 30  ! gridpoint output fields
+integer, parameter :: nusp        = 35  ! spectral output fields
+integer, parameter :: nurstini    = 40  ! restart for reading initial state
+integer, parameter :: nurstfin    = 45  ! restart for writing final state
+integer, parameter :: nudiag      = 50  ! statistics of model run
 
 !--- i/o file names
 character (256) :: cat_namelist  = "cat_namelist"
-character (256) :: sim_namelist  = "sim_namelist"
 character (256) :: cat_tseri     = "cat_tseri"
 character (256) :: cat_cfl       = "cat_cfl"
 character (256) :: cat_gp        = "cat_gp"
@@ -311,7 +320,6 @@ integer :: ntseri    = 10      ! time steps between time-series output
  
 real(8) :: dt        = 1.d-3   ! length of time step [s]
 
-
 !--- variables in physical/gridpoint (GP) space
 real(8), allocatable :: gq(:,:)   ! vorticity            [1/s]
 real(8), allocatable :: gpsi(:,:) ! stream function      [m^2/s]
@@ -339,8 +347,6 @@ complex(8), allocatable :: cq(:,:)     ! vorticity
 complex(8), allocatable :: cjac0(:,:)  ! Jacobian at time 0
 complex(8), allocatable :: cjac1(:,:)  ! Jacobian at time -1
 complex(8), allocatable :: cjac2(:,:)  ! Jaconbian at time -2
-
-
 
 !--- operators in Fourier Space
 integer   , allocatable :: ki(:),kj(:)  
@@ -408,18 +414,14 @@ if (lrst) then
    call check_rst
    call read_rst
 endif
-if (lcatnl .or. lsimnl) call read_nl
-if (tstep .eq. 0) call read_input
+call read_nl
+if (lsim) call simstart
+if (luser) call userstart
+call read_input
 call init_ltprop
 call init_rand
 call init_forc
-if (tstep .eq. 0) then
-   tstop = tstep + nsteps       ! initial state included
-else
-   tstop = tstep - 1 + nsteps   
-endif
-
-if (tstep .eq. 0) call init_tstepping
+call init_tstepping
 
 if (ngui > 0) call guistart
 
@@ -443,11 +445,6 @@ if (lcatnl) then
   open(nucatnl,file=cat_namelist,iostat=ios_catnl)
 endif
 
-inquire(file=sim_namelist,exist=lsimnl)
-if (lsimnl) then
-  open(nusimnl,file=sim_namelist,iostat=ios_simnl)
-endif
-
 open(nurstfin,file=cat_rstfin,form='unformatted')
 
 open(nudiag,file=cat_diag)
@@ -458,6 +455,8 @@ if (ngp .ge. 0)     open(nugp,file=cat_gp,form='unformatted')
 if (nsp .ge. 0)     open(nusp,file=cat_sp,form='unformatted')
 
 inquire(file="RSTTEST",exist=lrsttest)
+inquire(file="SIMMODE",exist=lsim)
+inquire(file="USERMODE",exist=luser)
 
 
 return
@@ -725,6 +724,8 @@ logical         :: lexist
 integer         :: kcode,jj,kk,kkmax
 character(2)    :: gtp
 character(256)  :: fname
+
+if (.not. (tstep .eq. 0) ) return
 
 do jj = 1,ngtp
    gtp = gtp_ar(jj)
@@ -1211,6 +1212,14 @@ real(8) :: dt2
 
 dt2 = dt/2
 
+!--- determine tstop and return if tstep > 0
+if (tstep .eq. 0) then
+   tstop = tstep + nsteps      
+else
+   tstop = tstep - 1 + nsteps   
+   return
+endif
+
 select case (tstp_mthd)
 case (1)
    call q2gquv
@@ -1267,6 +1276,8 @@ do while (tstep <= tstop)
    endif
    call step_forward
    if (nforc .ge. 1) call add_forc
+   if (lsim) call simstep
+   if (luser) call userstep
    tstep = tstep + 1
    if (nstdout.ge.0 .and. mod(tstep,nstdout) == 0) then
       write(*,*)' time step ',tstep
@@ -1330,6 +1341,8 @@ write(nudiag, &
  '(" *************************************************")')
 
 call close_files
+if (lsim) call simstop
+if (luser) call userstop
 
 return
 end subroutine epilog
@@ -1404,7 +1417,6 @@ use catmod
 
 if (lrst)            close(nurstini)
 if (lcatnl)          close(nucatnl) 
-if (lsimnl)          close(nusimnl)
 close(nurstfin)
 close(nudiag)
 if (ntseri .ge. 0)   close(nutseri)
