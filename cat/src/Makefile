@@ -34,8 +34,6 @@ clean:
 cleanall:
 	rm -f cat.x *.o *.mod cat_gp cat_gp.nc cat_sp cat_sp.nc cat_tseri cat_cfl cat_diag cat_rstini cat_rstfin
 	make cleanrsttest
-	rm -f SIMMODE
-	rm -f USERMODE
 
 run:
 	time ./cat.x $(NGX)

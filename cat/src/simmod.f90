@@ -2,9 +2,11 @@ module simmod
 use catmod
 
 !--- flags and switches
-logical :: lsimnl = .false.    ! true if <sim_namelist> exists
-                               ! and cat is set-up for a predefined
-                               ! simulation
+logical :: lsimnl = .false.    ! .true. if <sim_namelist> exists
+                               ! predefined simulations are activated
+                               ! automatically if sim_namelist is 
+                               ! present   
+
 
 integer :: ios_simnl = 1       ! 0 if <sim_namelist> is readable
 
@@ -13,6 +15,11 @@ integer, parameter :: nusimnl    = 110  ! sim namelist
 
 !--- i/o file names
 character (256) :: sim_namelist = "sim_namelist"
+
+!--- predefined experimets
+character (256) :: sim = "dec01" ! type of predefined simulation
+
+!--- parameters of dec01 (decaying turbulence)
 
 end module simmod
 
@@ -24,9 +31,14 @@ subroutine simstart
 use simmod
 implicit none
 
+!--- define sim_namelist
+namelist /sim_nl/ sim
 
 !--- check if sim_namelist is present
 inquire(file=sim_namelist,exist=lsimnl)
+
+
+!--- read sim_nl
 if (lsimnl) then
   open(nusimnl,file=sim_namelist,iostat=ios_simnl)
 else

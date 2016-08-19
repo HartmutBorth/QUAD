@@ -41,23 +41,25 @@ module catmod
 ! *****************
 character (256) :: catversion = "July 2016, Version 0.1"
 
-integer :: nshutdown = 0       ! flag to stop program
+integer :: nshutdown = 0       ! Flag to stop program
 logical :: lrsttest  = .false. ! flag set to .true. for restart test, 
                                ! parameter nsteps is not written 
                                ! to restart file. lrsttest is set to
                                ! true if a file RSTTEST is found in the
                                ! run directory. Call <make rsttest> to
-                               ! do the restart test. To clean the run
-                               ! after a restart test call <make cleanresttest> 
+                               ! do the restart test. To clean the run after
+                               ! a restart test call <make cleanresttest> 
 
-logical :: lsim  = .false.     ! flag set to .true. to activate predefined
-                               ! simulations. The simulation mode is activated 
-                               ! if a file SIMMODE is found in the run directory  
-logical :: luser = .false.     ! flag set to .true. to activate usermode.
-                               ! In usermode it is possible to modify 
-                               ! the code of CAT (see chapter <Modifying CAT>
-                               ! in the User's Guide). The user mode is
-                               ! activated by a file USERMODE
+logical :: lsim  = .false.     ! Namelist parameter, to activate predefined 
+                               ! simulations.
+
+logical :: lpost = .false.     ! Namelist parameter, to activate diagnostics
+                               ! and post processing.
+
+logical :: luser = .false.     ! Namelist parameter, to activate user mode.
+                               ! In usermode it is possible to introduce 
+                               ! new code into CAT (see chapter <Modifying 
+                               ! CAT> in the User's Guide).
 
 
 ! ***************************
@@ -455,9 +457,6 @@ if (ngp .ge. 0)     open(nugp,file=cat_gp,form='unformatted')
 if (nsp .ge. 0)     open(nusp,file=cat_sp,form='unformatted')
 
 inquire(file="RSTTEST",exist=lrsttest)
-inquire(file="SIMMODE",exist=lsim)
-inquire(file="USERMODE",exist=luser)
-
 
 return
 end subroutine inq_open_files
@@ -585,7 +584,8 @@ namelist /cat_nl/ nsteps    ,ngp       ,ngui    ,ingp    ,insp       , &
                   lam       ,plam      ,rtlam   ,klam     ,diss_mthd , &
                   nforc     ,kfmin     ,kfmax   ,aforc    ,tforc     , &
                   myseed    ,ntseri    ,nstdout ,jac_mthd ,ndiag     , &
-                  jac_scale ,nsp       ,outgp   ,outsp    ,tstp_mthd
+                  jac_scale ,nsp       ,outgp   ,outsp    ,tstp_mthd , &
+                  lsim      ,lpost     ,luser
 
 if (lcatnl) read(nucatnl,cat_nl) 
 
