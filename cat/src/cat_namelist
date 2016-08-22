@@ -1,6 +1,6 @@
  $cat_nl
  lsim = .true.
- ngui = 1
+ ngui = 0
  diss_mthd = 1
  jac_scale = 1.0
  dt        = 1.0d-3
@@ -9,10 +9,7 @@
  insp      = 0 
  outsp     = 138
  nsteps = 20000
- ngp       = -1
- nsp       = -1 
- ntseri    = 10000 
- ndiag     = 10000 
+ ngp       = 250 
  nstdout   = 10000 
  ncfl      = 500
  nforc     = 0

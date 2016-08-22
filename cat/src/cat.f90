@@ -314,10 +314,10 @@ integer :: ngp       = 100     ! time steps between output of grid point
                                ! fields (-1 = no output)
 integer :: nsp       = 100     ! time steps between output of spectral
                                ! fields (-1 = no output)
-integer :: ncfl      = 10      ! time steps between cfl-check 
+integer :: ncfl      = 100     ! time steps between cfl-check 
                                ! (-1 no cfl check)
 
-integer :: ntseri    = 10      ! time steps between time-series output
+integer :: ntseri    = 100     ! time steps between time-series output
                                ! (-1 no time-series)
  
 real(8) :: dt        = 1.d-3   ! length of time step [s]
@@ -379,7 +379,7 @@ end module inimod
 ! *******
 ! * CAT *
 ! *******
-program cat 
+program cat
 use catmod
 implicit none
 
@@ -406,8 +406,9 @@ use catmod
 implicit none
 
 call cpu_time(tmstart)
-call inq_open_files
-call mk_diaghead
+inquire(file="RSTTEST",exist=lrsttest)
+call init_rst
+call init_diag
 call read_resol
 call init_pars
 call alloc_vars
@@ -416,7 +417,8 @@ if (lrst) then
    call check_rst
    call read_rst
 endif
-call read_nl
+call read_catnl
+call open_cat
 if (lsim) call simstart
 if (luser) call userstart
 call read_input
@@ -429,37 +431,6 @@ if (ngui > 0) call guistart
 
 return
 end subroutine prolog
-
-
-! *****************************
-! * SUBROUTINE INQ_OPEN_FILES *
-! *****************************
-subroutine inq_open_files
-use catmod
-
-inquire(file=cat_rstini,exist=lrst)
-if (lrst) then
-  open(nurstini,file=cat_rstini,form='unformatted')
-endif
-
-inquire(file=cat_namelist,exist=lcatnl)
-if (lcatnl) then
-  open(nucatnl,file=cat_namelist,iostat=ios_catnl)
-endif
-
-open(nurstfin,file=cat_rstfin,form='unformatted')
-
-open(nudiag,file=cat_diag)
-
-if (ntseri .ge. 0)  open(nutseri,file=cat_tseri)
-if (ncfl .ge. 0)    open(nucfl,file=cat_cfl)
-if (ngp .ge. 0)     open(nugp,file=cat_gp,form='unformatted')
-if (nsp .ge. 0)     open(nusp,file=cat_sp,form='unformatted')
-
-inquire(file="RSTTEST",exist=lrsttest)
-
-return
-end subroutine inq_open_files
 
 
 ! *************************
@@ -477,11 +448,14 @@ return
 end subroutine read_resol
 
 
-! **************************
-! * SUBROUTINE MK_DIAGHEAD *
-! **************************
-subroutine mk_diaghead
+! ************************
+! * SUBROUTINE INIT_DIAG *
+! ************************
+subroutine init_diag
 use catmod
+implicit none
+
+open(nudiag,file=cat_diag)
 
 write(nudiag, &
  '(" *************************************************")')
@@ -500,9 +474,8 @@ if (lrsttest) then
     '(" *************************************************",/)')
 endif
 
-
 return
-end subroutine mk_diaghead
+end subroutine init_diag
 
 
 ! ***********************
@@ -570,10 +543,10 @@ return
 end subroutine read_rst
 
 
-! **********************
-! * SUBROUTINE READ_NL *
-! **********************
-subroutine read_nl
+! *************************
+! * SUBROUTINE READ_CATNL *
+! *************************
+subroutine read_catnl
 use catmod
 implicit none
 
@@ -587,35 +560,34 @@ namelist /cat_nl/ nsteps    ,ngp       ,ngui    ,ingp    ,insp       , &
                   jac_scale ,nsp       ,outgp   ,outsp    ,tstp_mthd , &
                   lsim      ,lpost     ,luser
 
-if (lcatnl) read(nucatnl,cat_nl) 
+inquire(file=cat_namelist,exist=lcatnl)
 
-write(nudiag, &
- '(/," **********************************************")')
-write(nudiag, &
- '(" * Parameters of namelist <cat_nl> used         *")')
-write(nudiag, &
- '(" *************************************************")')
-write (nudiag,cat_nl)
-write(nudiag, &
- '(" *************************************************",/)')
-
-if (diss_mthd .eq. 2) then
-   sig(:) = rtsig(:)*(1/ksig(:))**(2*psig(:))
-   lam(:) = rtlam(:)*(1/klam(:))**(2*plam(:))
-   write(nudiag, &
-    '(" *************************************************")')
-   write(nudiag, &
-    '(" * diss_mthd = 2 ,new sig and lam determined     *")')
-   write(nudiag, &
-    '(" *************************************************")')
-   write (nudiag,*) "sig(:) = ", sig(:)
-   write (nudiag,*) "lam(:) = ", lam(:)
-   write(nudiag, &
-    '(" *************************************************",/)')
+if (lcatnl) then
+  open(nucatnl,file=cat_namelist,iostat=ios_catnl)
+  read(nucatnl,cat_nl) 
 endif
 
 return
-end subroutine read_nl
+end subroutine read_catnl
+
+
+! ***********************
+! * SUBROUTINE OPEN_CAT *
+! ***********************
+subroutine open_cat
+use catmod
+implicit none
+
+
+open(nudiag,file=cat_diag)
+
+if (ntseri .ge. 0)  open(nutseri,file=cat_tseri)
+if (ncfl .gt. 0)    open(nucfl,file=cat_cfl)
+if (ngp .gt. 0)     open(nugp,file=cat_gp,form='unformatted')
+if (nsp .gt. 0)     open(nusp,file=cat_sp,form='unformatted')
+
+return
+end subroutine open_cat
 
 
 ! ************************
@@ -1083,7 +1055,7 @@ implicit none
 
 integer :: kk,kcode
 
-if(tstep.ge.0.and.mod(tstep,ngp).eq.0)  then
+if((ngp .gt. 0) .and. mod(tstep,ngp).eq.0)  then
    do kk = 1, noutgp
       kcode = outgp(kk)
       select case (kcode)
@@ -1093,7 +1065,7 @@ if(tstep.ge.0.and.mod(tstep,ngp).eq.0)  then
    enddo 
 endif
 
-if(tstep.ge.0.and.mod(tstep,nsp).eq.0)  then
+if((nsp .gt. 0) .and. mod(tstep,nsp).eq.0)  then
    do kk = 1, noutsp
       kcode = outsp(kk)
       select case (kcode)
@@ -1104,9 +1076,9 @@ if(tstep.ge.0.and.mod(tstep,nsp).eq.0)  then
    enddo
 endif
 
-if(tstep.ge.0.and.mod(tstep,ntseri).eq.0) call write_tseri
+if((ntseri .gt. 0) .and. mod(tstep,ntseri).eq.0) call write_tseri
 
-if(tstep.ge.0.and.mod(tstep,ncfl).eq.0)   call write_cfl
+if((ncfl .gt. 0) .and. mod(tstep,ncfl).eq.0)   call write_cfl
 
 return
 end subroutine write_output
@@ -1419,10 +1391,10 @@ if (lrst)            close(nurstini)
 if (lcatnl)          close(nucatnl) 
 close(nurstfin)
 close(nudiag)
-if (ntseri .ge. 0)   close(nutseri)
-if (ncfl .ge. 0)     close(nucfl)
-if (ngp .ge. 0)      close (nugp)
-if (nsp .ge. 0)      close (nusp)
+if (ntseri .gt. 0)   close(nutseri)
+if (ncfl .gt. 0)     close(nucfl)
+if (ngp .gt. 0)      close (nugp)
+if (nsp .gt. 0)      close (nusp)
 
 return
 end subroutine close_files
@@ -1613,6 +1585,25 @@ enddo
 
 return
 end subroutine init_ops
+
+
+! ************
+! * INIT_RST *
+! ************
+subroutine init_rst
+use catmod
+implicit none
+
+inquire(file=cat_rstini,exist=lrst)
+if (lrst) then
+  open(nurstini,file=cat_rstini,form='unformatted')
+endif
+
+open(nurstfin,file=cat_rstfin,form='unformatted')
+
+return
+end subroutine init_rst
+
 
 
 ! **************

@@ -1,0 +1,10 @@
+change subroutine inq_open_file ---> cat_open,
+where cat_open is only called after the namelists are read
+
+inquiering for and opening namelists is done in read namelist
+
+
+possibly rename read_nl to cat_nl
+
+
+then it is also possible to use sim_nl in simmod
