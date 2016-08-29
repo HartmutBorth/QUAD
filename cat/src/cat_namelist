@@ -1,5 +1,4 @@
  $cat_nl
- lsim = .true.
  ngui = 0
  diss_mthd = 1
  jac_scale = 1.0

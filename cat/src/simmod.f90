@@ -2,11 +2,8 @@ module simmod
 use catmod
 
 !--- flags and switches
-logical :: lsimnl = .false.    ! .true. if <sim_namelist> exists
-                               ! predefined simulations are activated
-                               ! automatically if sim_namelist is 
-                               ! present   
-
+logical :: lsimnl = .false.    ! .true. if sim_namelist is present in run 
+                               ! directory
 
 integer :: ios_simnl = 1       ! 0 if <sim_namelist> is readable
 
@@ -57,7 +54,6 @@ subroutine simstep
 use simmod
 implicit none
 
-
 return
 end subroutine simstep
 
@@ -68,7 +64,6 @@ end subroutine simstep
 subroutine simstop
 use simmod
 implicit none
-
 
 return
 end subroutine simstop

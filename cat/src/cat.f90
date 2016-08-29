@@ -50,17 +50,6 @@ logical :: lrsttest  = .false. ! flag set to .true. for restart test,
                                ! do the restart test. To clean the run after
                                ! a restart test call <make cleanresttest> 
 
-logical :: lsim  = .false.     ! Namelist parameter, to activate predefined 
-                               ! simulations.
-
-logical :: lpost = .false.     ! Namelist parameter, to activate diagnostics
-                               ! and post processing.
-
-logical :: luser = .false.     ! Namelist parameter, to activate user mode.
-                               ! In usermode it is possible to introduce 
-                               ! new code into CAT (see chapter <Modifying 
-                               ! CAT> in the User's Guide).
-
 
 ! ***************************
 ! * Physics and mathematics *
@@ -174,9 +163,9 @@ real(8) :: alpha = 0.0  ! alpha = 1/R_hat**2 [1/m**2]
                             
 real(8) :: beta  = 0.0  ! ambient vorticity gradient [1/m*s]
 
-!---------------------! 
+!---------------------!
 ! dissipation methods !
-!---------------------! 
+!---------------------!
 integer :: diss_mthd  = 1  ! dissipation method
                            ! 1: Laplacian viscosity and friction
                            !    characterized by the coefficients
@@ -357,24 +346,37 @@ real(8)   , allocatable :: k2n(:,:), rk2an(:,:)
 real(8)   , allocatable :: kirk2an(:,:),kjrk2an(:,:)
 complex(8), allocatable :: cli(:,:)                  ! linear time propagation
 
-!--- gui communication
+
+! *******************
+! * External moduls *
+! *******************
+
+!--- gui communication (guimod)
 integer :: ngui    = 1   ! global switch 1 = on
 integer :: nguidbg = 0   ! GUI debug mode
 
 integer :: ndatim(6) = 1 ! date/time display
 real(4) :: parc(5) = 0.0 ! timeseries display
 
+
+!--- predefined simulations (simmod)
+integer :: nsim  = 0 ! 1/0 predefined simulations on/off.
+                     ! Predefined simulations are specified in 
+                     ! <sim_namelist> of simmod. 
+
+!--- usermod (usermod)
+integer :: nuser = 0 ! 1/0 user mode is switched on/off.
+                     ! In user mode it is possible to introduce 
+                     ! new code into CAT (see chapter <Modifying 
+                     ! CAT> in the User's Guide).
+
+
+!--- postprocessing (postmod)
+integer :: npost = 0 ! 1/0 post processing is switched on/off  
+
+
 end module catmod
 
-! ****************
-! * MODUL INIMOD *
-! ****************
-module inimod
-
-use catmod
-
-
-end module inimod
 
 ! *******
 ! * CAT *
@@ -383,25 +385,25 @@ program cat
 use catmod
 implicit none
 
-call prolog
+call cat_prolog
 
-call master
+call cat_master
 
-call epilog
+call cat_epilog
 
 stop
 end program cat
 
 
 ! #####################################
-! #      Subroutines & Functions      #
+! #      SUBROUTINES & FUNCTIONIS     #
 ! #####################################
 
 
-! *********************
-! * subroutine prolog *
-! *********************
-subroutine prolog
+! *************************
+! * SUBROUTINE CAT_PROLOG *
+! *************************
+subroutine cat_prolog
 use catmod
 implicit none
 
@@ -417,20 +419,20 @@ if (lrst) then
    call check_rst
    call read_rst
 endif
-call read_catnl
-call open_cat
-if (lsim) call simstart
-if (luser) call userstart
+call cat_readnl
+call cat_open
+if (nsim > 0) call simstart
+if (nuser > 0) call userstart
 call read_input
 call init_ltprop
 call init_rand
 call init_forc
-call init_tstepping
+call init_step
 
 if (ngui > 0) call guistart
 
 return
-end subroutine prolog
+end subroutine cat_prolog
 
 
 ! *************************
@@ -544,9 +546,9 @@ end subroutine read_rst
 
 
 ! *************************
-! * SUBROUTINE READ_CATNL *
+! * SUBROUTINE CAT_READNL *
 ! *************************
-subroutine read_catnl
+subroutine cat_readnl
 use catmod
 implicit none
 
@@ -558,7 +560,7 @@ namelist /cat_nl/ nsteps    ,ngp       ,ngui    ,ingp    ,insp       , &
                   nforc     ,kfmin     ,kfmax   ,aforc    ,tforc     , &
                   myseed    ,ntseri    ,nstdout ,jac_mthd ,ndiag     , &
                   jac_scale ,nsp       ,outgp   ,outsp    ,tstp_mthd , &
-                  lsim      ,lpost     ,luser
+                  nsim      ,nuser     ,npost
 
 inquire(file=cat_namelist,exist=lcatnl)
 
@@ -568,13 +570,13 @@ if (lcatnl) then
 endif
 
 return
-end subroutine read_catnl
+end subroutine cat_readnl
 
 
 ! ***********************
-! * SUBROUTINE OPEN_CAT *
+! * SUBROUTINE CAT_OPEN *
 ! ***********************
-subroutine open_cat
+subroutine cat_open
 use catmod
 implicit none
 
@@ -587,7 +589,7 @@ if (ngp .gt. 0)     open(nugp,file=cat_gp,form='unformatted')
 if (nsp .gt. 0)     open(nusp,file=cat_sp,form='unformatted')
 
 return
-end subroutine open_cat
+end subroutine cat_open
 
 
 ! ************************
@@ -1172,10 +1174,10 @@ return
 end subroutine write_sp
 
 
-! *****************************
-! * SUBROUTINE INIT_TSTEPPING *
-! *****************************
-subroutine init_tstepping
+! ************************
+! * SUBROUTINE INIT_STEP *
+! ************************
+subroutine init_step
 use catmod
 implicit none
 
@@ -1225,13 +1227,13 @@ case (1)
 end select
 
 return
-end subroutine init_tstepping
+end subroutine init_step
 
 
-! *********************
-! * SUBROUTINE MASTER *
-! *********************
-subroutine master
+! *************************
+! * SUBROUTINE CAT_MASTER *
+! *************************
+subroutine cat_master
 use catmod
 implicit none
 
@@ -1246,10 +1248,10 @@ do while (tstep <= tstop)
       call gui_transfer
       call guistep_cat
    endif
-   call step_forward
+   call step
    if (nforc .ge. 1) call add_forc
-   if (lsim) call simstep
-   if (luser) call userstep
+   if (nsim > 0) call simstep
+   if (nuser > 0) call userstep
    tstep = tstep + 1
    if (nstdout.ge.0 .and. mod(tstep,nstdout) == 0) then
       write(*,*)' time step ',tstep
@@ -1257,13 +1259,13 @@ do while (tstep <= tstop)
 enddo
 
 return
-end subroutine master
+end subroutine cat_master
 
 
-! ***************************
-! * SUBROUTINE STEP_FORWARD *
-! ***************************
-subroutine step_forward
+! *******************
+! * SUBROUTINE STEP *
+! *******************
+subroutine step
 use catmod
 implicit none
 
@@ -1287,13 +1289,13 @@ case (1)
 end select
 
 return
-end subroutine step_forward
+end subroutine step
 
 
-! *********************
-! * SUBROUTINE EPILOG *
-! *********************
-subroutine epilog
+! *************************
+! * SUBROUTINE CAT_EPILOG *
+! *************************
+subroutine cat_epilog
 use catmod
 implicit none
 
@@ -1312,12 +1314,12 @@ write(nudiag,'("  Time steps per second: ",i12)') tsps
 write(nudiag, &
  '(" *************************************************")')
 
+if (nsim > 0) call simstop
+if (nuser > 0) call userstop
 call close_files
-if (lsim) call simstop
-if (luser) call userstop
 
 return
-end subroutine epilog
+end subroutine cat_epilog
 
 
 ! ************************

@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex 2016.7.18)  19 AUG 2016 17:13
+This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex 2016.7.18)  29 AUG 2016 16:36
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -373,13 +373,17 @@ Underfull \hbox (badness 10000) in paragraph at lines 7--12
 
  []
 
-) (./app_modulsvariables.tex [43
+) (./app_modulsvariables.tex
+Underfull \vbox (badness 10000) has occurred while \output is active []
 
-] [44
+ [43
 
 ]
+[44]
 Appendix B.
-) (./app_codestruct.tex [45] [46
+) (./app_codestruct.tex [45
+
+] [46
 
 ]
 Appendix C.
@@ -417,7 +421,7 @@ usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/sh
 are/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/share/tex
 live/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb></usr/share/texlive/t
 exmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb>
-Output written on ug_cat.pdf (49 pages, 324374 bytes).
+Output written on ug_cat.pdf (49 pages, 324489 bytes).
 PDF statistics:
  304 PDF objects out of 1000 (max. 8388607)
  204 compressed objects within 3 object streams
