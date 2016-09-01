@@ -7,7 +7,7 @@
  ingp      = 138
  insp      = 0 
  outsp     = 138
- nsteps = 20000
+ nsteps    = 50000
  ngp       = 250 
  nstdout   = 10000 
  ncfl      = 500

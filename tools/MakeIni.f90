@@ -65,7 +65,6 @@ do jy = 1 , ny
 !     z(jx,jy) = z(jx,jy)*(1 + 0.1*sin((jy-1)*dx))
 
 
-
       z(jx,jy) =  0.0d0
       if (jy > rr*j1-(rr-1) .and. jy < rr*j2-(rr-1)) then
          z(jx,jy) = -amp 

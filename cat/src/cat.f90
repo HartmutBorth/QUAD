@@ -413,7 +413,7 @@ call init_rst
 call init_diag
 call read_resol
 call init_pars
-call alloc_vars
+call cat_alloc
 call init_ops
 if (lrst) then
    call check_rst
@@ -423,7 +423,7 @@ call cat_readnl
 call cat_open
 if (nsim > 0) call simstart
 if (nuser > 0) call userstart
-call read_input
+call cat_input
 call init_ltprop
 call init_rand
 call init_forc
@@ -632,9 +632,9 @@ end subroutine init_pars
 
 
 ! ************************
-! * SUBROUTINE ALLOCVARS *
+! * SUBROUTINE CAT_ALLOC *
 ! ************************
-subroutine alloc_vars
+subroutine cat_alloc
 use catmod
 implicit none
 
@@ -684,13 +684,13 @@ allocate(cjac1(0:nkx,0:nfy)); cjac1(:,:) = (0.0,0.0) ! Jacobian at time level -1
 allocate(cjac2(0:nkx,0:nfy)); cjac2(:,:) = (0.0,0.0) ! Jacobian at time level -2
 
 return
-end subroutine alloc_vars
+end subroutine cat_alloc
 
 
-! *************************
-! * SUBROUTINE READ_INPUT *
-! *************************
-subroutine read_input
+! ************************
+! * SUBROUTINE CAT_INPUT *
+! ************************
+subroutine cat_input
 use catmod
 implicit none
 
@@ -732,7 +732,7 @@ do jj = 1,ngtp
                cq(0,0) = (0.0,0.0)
             end select
          else
-            call mk_fname(kcode,gtp,fname)
+            call cat_fname(kcode,gtp,fname)
             write(nudiag, &
             '(" *************************************************")')
             write(nudiag, &
@@ -745,13 +745,13 @@ do jj = 1,ngtp
 enddo
 
 return
-end subroutine read_input
+end subroutine cat_input
 
 
-! ***********************
-! * SUBROUTINE MK_FNAME *
-! ***********************
-subroutine mk_fname(kcode,gtp,fname)
+! ************************
+! * SUBROUTINE CAT_FNAME *
+! ************************
+subroutine cat_fname(kcode,gtp,fname)
 use catmod
 implicit none
 
@@ -770,7 +770,7 @@ endif
 fname = trim(fname)
 
 return
-end subroutine mk_fname
+end subroutine cat_fname
 
 
 ! ***********************
@@ -784,7 +784,7 @@ character(2)   :: gtp
 character(256) :: fname
 integer :: kcode
 
-call mk_fname(kcode,gtp,fname)
+call cat_fname(kcode,gtp,fname)
 inquire(file=trim(fname),exist=lexist)
 
 return
@@ -803,7 +803,7 @@ character(256) :: fname
 integer        :: kcode
 real(8)        :: gpvar(1:ngx,1:ngy)
 
-call mk_fname(kcode,gtp,fname)
+call cat_fname(kcode,gtp,fname)
 
 open(nuin,file=fname,form='unformatted')
 
@@ -834,7 +834,7 @@ character(256) :: fname
 integer        :: kcode
 real(8)        :: spvar(0:nfx,0:nfy)
 
-call mk_fname(kcode,gtp,fname)
+call cat_fname(kcode,gtp,fname)
 
 open(nuin,file=fname,form='unformatted')
 
