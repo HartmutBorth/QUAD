@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex 2016.7.18)  29 AUG 2016 16:36
+This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex 2016.7.18)  2 SEP 2016 17:10
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -299,14 +299,14 @@ Overfull \hbox (8.27783pt too wide) in paragraph at lines 673--680
 12 maps the in-put vec-tor $[]$ to $[]$, a $4$-component
  []
 
-[19] <figures/phys_grid.pdf, id=77, 796.9775pt x 597.23125pt>
+[19] <figures/phys_grid.pdf, id=78, 796.9775pt x 597.23125pt>
 File: figures/phys_grid.pdf Graphic file (type pdf)
 
 <use figures/phys_grid.pdf>
 Package pdftex.def Info: figures/phys_grid.pdf used on input line 877.
 (pdftex.def)             Requested size: 341.72076pt x 256.0748pt.
 
-<figures/cmplx_real_spec_grid.pdf, id=78, 796.9775pt x 597.23125pt>
+<figures/cmplx_real_spec_grid.pdf, id=79, 796.9775pt x 597.23125pt>
 File: figures/cmplx_real_spec_grid.pdf Graphic file (type pdf)
 
 <use figures/cmplx_real_spec_grid.pdf>
@@ -317,7 +317,7 @@ Package pdftex.def Info: figures/cmplx_real_spec_grid.pdf used on input line 89
 
 pdfTeX warning: pdflatex (file ./figures/cmplx_real_spec_grid.pdf): PDF inclusi
 on: multiple pdfs with page group included in a single page
->] <figures/cmplx_cent_grid.pdf, id=118, 796.9775pt x 597.23125pt>
+>] <figures/cmplx_cent_grid.pdf, id=119, 796.9775pt x 597.23125pt>
 File: figures/cmplx_cent_grid.pdf Graphic file (type pdf)
 
 <use figures/cmplx_cent_grid.pdf>
@@ -331,7 +331,7 @@ Overfull \hbox (0.47232pt too wide) in paragraph at lines 978--984
 12 )$
  []
 
-[23] [24] [25] <figures/diss_mask.pdf, id=150, 796.9775pt x 597.23125pt>
+[23] [24] [25] <figures/diss_mask.pdf, id=151, 796.9775pt x 597.23125pt>
 File: figures/diss_mask.pdf Graphic file (type pdf)
 
 <use figures/diss_mask.pdf>
@@ -341,9 +341,9 @@ Package pdftex.def Info: figures/diss_mask.pdf used on input line 1407.
 
 ]
 Chapter 4.
-) [29] [30
+) [29] [30] [31
 
-] [31] [32] (./chap_impcat.tex
+] [32] (./chap_impcat.tex
 Chapter 5.
 ) (./chap_runcat.tex [33
 
@@ -399,11 +399,11 @@ LaTeX Warning: There were multiply-defined labels.
 
  ) 
 Here is how much of TeX's memory you used:
- 2716 strings out of 494953
- 38594 string characters out of 6180977
+ 2717 strings out of 494953
+ 38611 string characters out of 6180977
  117239 words of memory out of 5000000
- 5924 multiletter control sequences out of 15000+600000
- 11346 words of font info for 44 fonts, out of 8000000 for 9000
+ 5925 multiletter control sequences out of 15000+600000
+ 11515 words of font info for 45 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
  38i,12n,32p,424b,256s stack positions out of 5000i,500n,10000p,200000b,80000s
 </usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></us
@@ -421,7 +421,7 @@ usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/sh
 are/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/share/tex
 live/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb></usr/share/texlive/t
 exmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb>
-Output written on ug_cat.pdf (49 pages, 324489 bytes).
+Output written on ug_cat.pdf (49 pages, 327872 bytes).
 PDF statistics:
  304 PDF objects out of 1000 (max. 8388607)
  204 compressed objects within 3 object streams
